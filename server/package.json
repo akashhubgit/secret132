@@ -1,0 +1,24 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "A Node.js application to download YouTube videos",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index.js"
+  },
+  "author": "Teddy Winters",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "ffmpeg": "^0.0.4",
+    "ffmpeg-static": "^5.2.0",
+    "fluent-ffmpeg": "^2.1.2",
+    "fs": "^0.0.1-security",
+    "memory-streams": "^0.1.3",
+    "node.js": "^0.0.1-security",
+    "path": "^0.12.7",
+    "ytdl-core": "^4.11.5"
+  },
+  "keywords": []
+}
