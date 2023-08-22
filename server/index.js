@@ -16,7 +16,9 @@ app.listen(3000, () => {
 });
 
 app.get('/', (req, res) => {
-    res.sendFile('index.html', { root: './' });
+    res.sendFile('index.html', {
+        root: './'
+    });
 })
 
 
@@ -27,79 +29,184 @@ app.get('/', (req, res) => {
 //});
 
 app.get('/download', async (req, res) => {
-  try {
-    const url = req.query.url;
+    try {
+        const url = req.query.url;
+        const downloadType = req.query.downloadType;
 
-    var stream = ytdl(url, { format: 'mp4', filter: 'audioonly' });
-    var videoName = "test";
+        if (downloadType.localeCompare('mp4')) {
+            // MP3 Download    
 
-    const videoInfoPromise = new Promise((resolve) => {
-      stream.on('info', (info) => {
-        videoName = info.videoDetails.title.replace(/[^\x00-\x7F]/g, '');
-        console.log("Getting: " + videoName);
-        resolve();
-      });
-    });
+            var stream = ytdl(url, {
+                format: 'mp4',
+                filter: 'audioonly'
+            });
+            
+            var videoName = "test";
 
-    await videoInfoPromise; // Wait for videoName to be updated
+            const videoInfoPromise = new Promise((resolve) => {
+                stream.on('info', (info) => {
+                    videoName = info.videoDetails.title.replace(/[^\x00-\x7F]/g, '');
+                    console.log("Getting: " + videoName);
+                    resolve();
+                });
+            });
 
-    // The rest of your code that depends on the updated videoName
-    const inputFilePath = './temp/' + videoName + '.mp4';
-    const outputFilePath = './temp/' + videoName + '.mp3';
+            await videoInfoPromise; // Wait for videoName to be updated
 
-    await new Promise((resolve, reject) => {
-      console.log("Writing: " + videoName + ".mp4");
-      stream.pipe(fs.createWriteStream(inputFilePath))
-        .on('finish', resolve)
-        .on('error', reject);
-    });
+            // The rest of your code that depends on the updated videoName
+            const inputFilePath = './temp/' + videoName + '.mp4';
+            const outputFilePath = './temp/' + videoName + '.mp3';
 
-    await new Promise((resolve, reject) => {
-      console.log("Converting: " + videoName + " to .mp3");
-      ffmpeg()
-        .input(inputFilePath)
-        .output(outputFilePath)
-        .audioCodec('libmp3lame')
-        .on('end', resolve)
-        .on('error', reject)
-        .run();
-    });
+            await new Promise((resolve, reject) => {
+                console.log("Writing: " + videoName + ".mp4");
+                stream.pipe(fs.createWriteStream(inputFilePath))
+                    .on('finish', resolve)
+                    .on('error', reject);
+            });
 
-    // Send the converted MP3 file for download
-    res.download(outputFilePath, videoName + '.mp3', async (err) => {
-      if (err) {
-        console.error('Error:', err);
-      } else {
-        console.log('File sent successfully');
-        // Delete the files after the download is complete
-        const filesToDelete = [
-          './temp/' + videoName + '.mp4',
-          './temp/' + videoName + '.mp3'
-        ];
+            await new Promise((resolve, reject) => {
+                console.log("Converting: " + videoName + " to .mp3");
+                ffmpeg()
+                    .input(inputFilePath)
+                    .output(outputFilePath)
+                    .audioCodec('libmp3lame')
+                    .on('end', resolve)
+                    .on('error', reject)
+                    .run();
+            });
 
-        filesToDelete.forEach((filePath) => {
-          fs.unlink(filePath, (err) => {
-            if (err) {
-              console.error('Error deleting file:', err);
-            } else {
-              console.log('File deleted successfully:', filePath);
-            }
-          });
-        });
-        fs.appendFile('./logs/success/' + videoName + ".txt", "", (err) => {
-    if (err) {
-      console.error('Error writing to log file:', err);
-    } else {
-      console.log('Log entry written to file.');
+            // Send the converted MP3 file for download
+            res.download(outputFilePath, videoName + '.mp3', async (err) => {
+                if (err) {
+                    console.error('Error:', err);
+                } else {
+                    console.log('File sent successfully');
+                    // Delete the files after the download is complete
+                    const filesToDelete = [
+                        './temp/' + videoName + '.mp4',
+                        './temp/' + videoName + '.mp3'
+                    ];
+
+                    filesToDelete.forEach((filePath) => {
+                        fs.unlink(filePath, (err) => {
+                            if (err) {
+                                console.error('Error deleting file:', err);
+                            } else {
+                                console.log('File deleted successfully:', filePath);
+                            }
+                        });
+                    });
+                    fs.appendFile('./logs/success/' + videoName + ".txt", "", (err) => {
+                        if (err) {
+                            console.error('Error writing to log file:', err);
+                        } else {
+                            console.log('Log entry written to file.');
+                        }
+                    });
+                }
+            });
+
+
+        } else {
+            // MP4 Download
+            const quality = req.query.videoQuality;
+
+            var soundStream = ytdl(url, {
+                format: 'mp4',
+                filter: 'audioonly'
+            });
+
+            var videoStream = ytdl(url, {
+                format: 'mp4'
+            });
+
+            var videoName = "test";
+
+            const videoInfoPromise = new Promise((resolve) => {
+                soundStream.on('info', (info) => {
+                    videoName = info.videoDetails.title.replace(/[^\x00-\x7F]/g, '');
+                    console.log("Getting: " + videoName);
+                    resolve();
+                });
+            });
+
+            await videoInfoPromise; // Wait for videoName to be updated
+
+            // The rest of your code that depends on the updated videoName
+            const inputSoundFilePath = './temp/' + videoName + '_s' + '.mp4';
+            const inputVideoFilePath = './temp/' + videoName + '_v' + '.mp4';
+
+            const outputFilePath = './temp/' + videoName + '.mp4';
+
+            await new Promise((resolve, reject) => {
+                console.log("Writing: " + videoName + '_s' + ".mp4");
+                soundStream.pipe(fs.createWriteStream(inputSoundFilePath))
+                    .on('finish', resolve)
+                    .on('error', reject);
+            });
+
+            await new Promise((resolve, reject) => {
+                console.log("Writing: " + videoName + '_v' + ".mp4");
+                videoStream.pipe(fs.createWriteStream(inputVideoFilePath))
+                    .on('finish', resolve)
+                    .on('error', reject);
+            });
+
+            await new Promise((resolve, reject) => {
+                console.log("Merging: " + videoName + "to .mp4");
+                // Merge audio and video
+                ffmpeg()
+                    .input(inputVideoFilePath)
+                    .input(inputSoundFilePath)
+                    .outputOptions('-c:v', 'copy') // Copy video stream
+                    .outputOptions('-c:a', 'aac') // Encode audio stream using AAC
+                    .outputOptions('-strict', 'experimental') // Enable experimental codecs
+                    .save(outputFilePath)
+                    .on('end', () => {
+                        resolve(); // Resolve the promise when merging is complete
+                    })
+                    .on('error', (err) => {
+                        console.error('Error:', err);
+                        reject(err); // Reject the promise if an error occurs
+                    });
+            });
+
+            res.download(outputFilePath, videoName + '.mp4', async (err) => {
+                if (err) {
+                    console.error('Error:', err);
+                } else {
+                    console.log('File sent successfully');
+                    // Delete the files after the download is complete
+                    const filesToDelete = [
+                        './temp/' + videoName + '_v' + '.mp4',
+                        './temp/' + videoName + '_s' + '.mp4',
+                        './temp/' + videoName + '.mp4',
+                    ];
+
+                    filesToDelete.forEach((filePath) => {
+                        fs.unlink(filePath, (err) => {
+                            if (err) {
+                                console.error('Error deleting file:', err);
+                            } else {
+                                console.log('File deleted successfully:', filePath);
+                            }
+                        });
+                    });
+                    fs.appendFile('./logs/success/' + videoName + ".txt", "", (err) => {
+                        if (err) {
+                            console.error('Error writing to log file:', err);
+                        } else {
+                            console.log('Log entry written to file.');
+                        }
+                    });
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send('Aywa versuch mal nochmal neu (wenn wieder net klappt schick pls Bild an AK)' +
+            '\n' + '\n' + '\n' + error);
     }
-  });
-      }
-    });
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).send('Aywa versuch mal nochmal neu (wenn wieder net klappt schick pls Bild an AK)'
-    + '\n' + '\n' + '\n' + error);
-  }
 });
 
 
