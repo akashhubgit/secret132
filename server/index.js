@@ -111,6 +111,71 @@ app.get('/download', async (req, res) => {
             // MP4 Download
             const quality = req.query.videoQuality;
 
+
+            if (quality.localeCompare('good')) {
+                // Bad quality download
+                
+                var stream = ytdl(url, {
+                quality: 'highest',
+                filter: 'videoandaudio'
+            });
+            
+            var videoName = "test";
+
+            const videoInfoPromise = new Promise((resolve) => {
+                stream.on('info', (info) => {
+                    videoName = info.videoDetails.title.replace(/[^\x00-\x7F]/g, '');
+                    console.log("Getting: " + videoName);
+                    resolve();
+                });
+            });
+
+            await videoInfoPromise; // Wait for videoName to be updated
+
+            // Are the same
+            const inputFilePath = './temp/' + videoName + '_b' + '.mp4';
+            const outputFilePath = './temp/' + videoName + '_b' + '.mp4';
+                
+            await new Promise((resolve, reject) => {
+                console.log("Writing: " + videoName + '_b' + ".mp4");
+                stream.pipe(fs.createWriteStream(inputFilePath))
+                    .on('finish', resolve)
+                    .on('error', reject);
+            });
+                
+            // Send the MP4 file for download
+            res.download(outputFilePath, videoName + '_b' + '.mp4', async (err) => {
+                if (err) {
+                    console.error('Error:', err);
+                } else {
+                    console.log('File sent successfully');
+                    // Delete the files after the download is complete
+                    const filesToDelete = [
+                        './temp/' + videoName + '_b' + '.mp4',
+                    ];
+
+                    filesToDelete.forEach((filePath) => {
+                        fs.unlink(filePath, (err) => {
+                            if (err) {
+                                console.error('Error deleting file:', err);
+                            } else {
+                                console.log('File deleted successfully:', filePath);
+                            }
+                        });
+                    });
+                    fs.appendFile('./logs/success/' + videoName + "_b" + ".txt", "", (err) => {
+                        if (err) {
+                            console.error('Error writing to log file:', err);
+                        } else {
+                            console.log('Log entry written to file.');
+                        }
+                    });
+                }
+            });    
+                
+            } else {
+                // Good quality download
+                
             var soundStream = ytdl(url, {
                 format: 'mp4',
                 filter: 'audioonly'
@@ -136,7 +201,7 @@ app.get('/download', async (req, res) => {
             const inputSoundFilePath = './temp/' + videoName + '_s' + '.mp4';
             const inputVideoFilePath = './temp/' + videoName + '_v' + '.mp4';
 
-            const outputFilePath = './temp/' + videoName + '.mp4';
+            const outputFilePath = './temp/' + videoName + '_g' + '.mp4';
 
             await new Promise((resolve, reject) => {
                 console.log("Writing: " + videoName + '_s' + ".mp4");
@@ -171,7 +236,7 @@ app.get('/download', async (req, res) => {
                     });
             });
 
-            res.download(outputFilePath, videoName + '.mp4', async (err) => {
+            res.download(outputFilePath, videoName + '_g' + '.mp4', async (err) => {
                 if (err) {
                     console.error('Error:', err);
                 } else {
@@ -180,7 +245,7 @@ app.get('/download', async (req, res) => {
                     const filesToDelete = [
                         './temp/' + videoName + '_v' + '.mp4',
                         './temp/' + videoName + '_s' + '.mp4',
-                        './temp/' + videoName + '.mp4',
+                        './temp/' + videoName + '_g' + '.mp4',
                     ];
 
                     filesToDelete.forEach((filePath) => {
@@ -192,7 +257,7 @@ app.get('/download', async (req, res) => {
                             }
                         });
                     });
-                    fs.appendFile('./logs/success/' + videoName + ".txt", "", (err) => {
+                    fs.appendFile('./logs/success/' + videoName + "_g" + ".txt", "", (err) => {
                         if (err) {
                             console.error('Error writing to log file:', err);
                         } else {
@@ -202,6 +267,7 @@ app.get('/download', async (req, res) => {
                 }
             });
         }
+    }
     } catch (error) {
         console.error('Error:', error);
         res.status(500).send('Aywa versuch mal nochmal neu (wenn wieder net klappt schick pls Bild an AK)' +
