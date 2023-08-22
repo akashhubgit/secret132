@@ -124,7 +124,7 @@ app.get('/download', async (req, res) => {
 
             const videoInfoPromise = new Promise((resolve) => {
                 stream.on('info', (info) => {
-                    videoName = info.videoDetails.title.replace(/[^\x00-\x7F]/g, '');
+                    videoName = info.videoDetails.title.replace(/[^a-zA-Z0-9]+/g, '-');
                     console.log("Getting: " + videoName);
                     resolve();
                 });
@@ -189,7 +189,7 @@ app.get('/download', async (req, res) => {
 
             const videoInfoPromise = new Promise((resolve) => {
                 soundStream.on('info', (info) => {
-                    videoName = info.videoDetails.title.replace(/[^\x00-\x7F]/g, '');
+                    videoName = info.videoDetails.title.replace(/[^a-zA-Z0-9]+/g, '-');
                     console.log("Getting: " + videoName);
                     resolve();
                 });
