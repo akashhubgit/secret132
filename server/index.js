@@ -97,7 +97,8 @@ app.get('/download', async (req, res) => {
     });
   } catch (error) {
     console.error('Error:', error);
-    res.status(500).send('Internal Server Error');
+    res.status(500).send('Aywa versuch mal nochmal neu (wenn wieder net klappt schick pls Bild an AK)'
+    + '\n' + '\n' + '\n' + error);
   }
 });
 
