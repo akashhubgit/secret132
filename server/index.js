@@ -86,6 +86,13 @@ app.get('/download', async (req, res) => {
             }
           });
         });
+        fs.appendFile('./logs/success/' + videoName + ".txt", "", (err) => {
+    if (err) {
+      console.error('Error writing to log file:', err);
+    } else {
+      console.log('Log entry written to file.');
+    }
+  });
       }
     });
   } catch (error) {
