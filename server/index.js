@@ -24,8 +24,8 @@ secondApp.get('/', (req, res) => {
 });
 
 // New code
-secondApp.listen(8080, '0.0.0.0' , () => {
-  console.log("Second website running on http://localhost:8080/");
+secondApp.listen(3030, '0.0.0.0' , () => {
+  console.log("Second website running on http://localhost:3030/");
 });
 
 app.listen(3000, () => {
