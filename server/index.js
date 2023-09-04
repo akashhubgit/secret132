@@ -11,6 +11,23 @@ const path = require('path');
 // new
 app.use('/static', express.static('./static'));
 
+// Create another Express.js application for the second website
+const secondApp = express();
+
+// Replace 'path-to-your-website-directory' with the directory where your second website's files are located
+secondApp.use(express.static('./website8080/'));
+
+secondApp.get('/', (req, res) => {
+  res.sendFile('index.html', {
+    root: './website8080/index.html' // Replace this with the path to your second website's index.html
+  });
+});
+
+// New code
+secondApp.listen(8080, () => {
+  console.log("Second website running on http://localhost:8080/");
+});
+
 app.listen(3000, () => {
     console.log("It Works!");
 });
