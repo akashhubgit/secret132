@@ -7,6 +7,7 @@ const fs = require('fs');
 const ffmpegStatic = require('ffmpeg-static');
 const ffmpeg = require('fluent-ffmpeg');
 const path = require('path');
+const pathtowebsite2 = './website3030/';
 //const MemoryStreams = require('memory-streams');
 // new
 app.use('/static', express.static('./static'));
@@ -15,15 +16,15 @@ app.use('/static', express.static('./static'));
 const secondApp = express();
 
 // Replace 'path-to-your-website-directory' with the directory where your second website's files are located
-secondApp.use(express.static('./website8080/'));
+secondApp.use(express.static(pathtowebsite2));
 
 secondApp.get('/', (req, res) => {
   res.sendFile('index.html', {
-    root: './website8080/index.html' // Replace this with the path to your second website's index.html
+    root: pathtowebsite2 + 'index.html'
   });
 });
 
-// New code
+// give access to everyone not only localhost cause of the other website
 secondApp.listen(3030, '0.0.0.0' , () => {
   console.log("Second website running on http://localhost:3030/");
 });
