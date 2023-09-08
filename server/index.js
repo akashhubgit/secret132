@@ -1,83 +1,312 @@
-<!DOCTYPE html>
-<html>
+const express = require('express');
+const cors = require('cors');
+const ytdl = require('ytdl-core');
+const app = express();
+// new
+const fs = require('fs');
+const ffmpegStatic = require('ffmpeg-static');
+const ffmpeg = require('fluent-ffmpeg');
+const path = require('path');
+const pathtowebsite2 = './website3030/';
+//const MemoryStreams = require('memory-streams');
+// new
+app.use('/static', express.static('./static'));
 
-<head>
-    <title>AK's YouTube Downloader</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
-        integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
-        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
-        crossorigin="anonymous"></script>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
-        crossorigin="anonymous">
-    <style type="text/css">
-    </style>
-</head>
+// Create another Express.js application for the second website
+const secondApp = express();
 
-<body>
-    <div id="banner">
-        <div class="container-fluid">
-            <div class="jumbotron text-center">
-                <h3>AK's YouTube Downloader</h3>
-            </div>
-            <div class="row">
-                <div class="col-12 col-md-4 offset-md-4">
-                    <form action="/download" method="GET">
-                        <div class="form-group">
-                            <input class="form-control" type="text" name="url" placeholder="https://youtu.be/dQw4w9WgXcQ"
-                                required />
-                        </div>
-                        <div class="form-group">
-                            <label for="downloadType">Select download type:</label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="downloadType" value="mp3" checked>
-                                <label class="form-check-label" for="downloadType">MP3</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="downloadType" value="mp4"
-                                    id="mp4Radio">
-                                <label class="form-check-label" for="downloadType">MP4</label>
-                            </div>
-                        </div>
-                        <div class="form-group" id="videoQualityOptions" style="display: none;">
-                            <label for="videoQuality">Select video quality (MP4 only):</label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="videoQuality" value="bad" checked>
-                                <label class="form-check-label" for="videoQuality">Bad Quality</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="videoQuality" value="good">
-                                <label class="form-check-label" for="videoQuality">Good Quality</label>
-                            </div>
+// Replace 'path-to-your-website-directory' with the directory where your second website's files are located
+secondApp.use(express.static(pathtowebsite2));
 
-                        </div>
-                        <div class="form-group text-center">
-                            <input class="btn btn-primary" type="submit" value="Download" />
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
+secondApp.get('/', (req, res) => {
+  res.sendFile('index.html', {
+    root: pathtowebsite2 + 'index.html'
+  });
+});
 
-    <script>
-        // Toggle video quality options based on MP4 selection
-        const mp4Radio = document.getElementById("mp4Radio");
-        const videoQualityOptions = document.getElementById("videoQualityOptions");
+// give access to everyone not only localhost cause of the other website
+secondApp.listen(3030, '0.0.0.0' , () => {
+  console.log("Second website running on http://localhost:3030/");
+});
 
-        mp4Radio.addEventListener("change", function () {
-            videoQualityOptions.style.display = this.checked ? "block" : "none";
-        });
+app.listen(3000, () => {
+    console.log("It Works!");
+});
 
-        const mp3Radio = document.querySelector("input[name='downloadType'][value='mp3']");
+app.get('/', (req, res) => {
+    res.sendFile('index.html', {
+        root: './'
+    });
+})
 
-        mp3Radio.addEventListener("change", function () {
-            videoQualityOptions.style.display = "none";
-        });
-    </script>
-</body>
 
-</html>
+//app.get('/download', (req, res) => {
+//    var url = req.query.url;
+//    res.header("Content-Disposition", 'attachment; filename="Video.mp4');
+//    ytdl(url, {format: 'mp4'}).pipe(res);
+//});
+
+app.get('/download', async (req, res) => {
+    try {
+        const url = req.query.url;
+        const downloadType = req.query.downloadType;
+
+        if (downloadType.localeCompare('mp4')) {
+            // MP3 Download    
+
+            var stream = ytdl(url, {
+                format: 'mp4',
+                filter: 'audioonly'
+            });
+
+            var videoName = "test";
+
+            const videoInfoPromise = new Promise((resolve) => {
+                stream.on('info', (info) => {
+                    videoName = info.videoDetails.title.replace(/[#<>$+%!^&*´``~'|{}?=/\\@]/g, '-').replace(/ä/g, 'ae').replace(/ü/g, 'ue').replace(/ö/g, 'oe');
+                    console.log("Getting: " + videoName);
+                    resolve();
+                });
+            });
+
+            await videoInfoPromise; // Wait for videoName to be updated
+
+            // The rest of your code that depends on the updated videoName
+            const inputFilePath = './temp/' + videoName + '.mp4';
+            const outputFilePath = './temp/' + videoName + '.mp3';
+
+            await new Promise((resolve, reject) => {
+                console.log("Writing: " + videoName + ".mp4");
+                stream.pipe(fs.createWriteStream(inputFilePath))
+                    .on('finish', resolve)
+                    .on('error', reject);
+            });
+
+            await new Promise((resolve, reject) => {
+                console.log("Converting: " + videoName + " to .mp3");
+                ffmpeg()
+                    .input(inputFilePath)
+                    .output(outputFilePath)
+                    .audioCodec('libmp3lame')
+                    .on('end', resolve)
+                    .on('error', reject)
+                    .run();
+            });
+
+            // Send the converted MP3 file for download
+            res.download(outputFilePath, videoName + '.mp3', async (err) => {
+                if (err) {
+                    console.error('Error:', err);
+                } else {
+                    console.log('File sent successfully');
+                    // Delete the files after the download is complete
+                    const filesToDelete = [
+                        './temp/' + videoName + '.mp4',
+                        './temp/' + videoName + '.mp3'
+                    ];
+
+                    filesToDelete.forEach((filePath) => {
+                        fs.unlink(filePath, (err) => {
+                            if (err) {
+                                console.error('Error deleting file:', err);
+                            } else {
+                                console.log('File deleted successfully:', filePath);
+                            }
+                        });
+                    });
+                    fs.appendFile('./logs/success/' + videoName + ".txt", "", (err) => {
+                        if (err) {
+                            console.error('Error writing to log file:', err);
+                        } else {
+                            console.log('Log entry written to file.');
+                        }
+                    });
+                }
+            });
+
+
+        } else {
+            // MP4 Download
+            const quality = req.query.videoQuality;
+
+
+            if (quality.localeCompare('good')) {
+                // Bad quality download
+
+                var stream = ytdl(url, {
+                quality: 'highest',
+                filter: 'videoandaudio'
+            });
+
+            var videoName = "test";
+
+            const videoInfoPromise = new Promise((resolve) => {
+                stream.on('info', (info) => {
+                    videoName = info.videoDetails.title.replace(/[#<>$+%!^&*´``~'|{}?=/\\@]/g, '-').replace(/ä/g, 'ae').replace(/ü/g, 'ue').replace(/ö/g, 'oe');
+                    console.log("Getting: " + videoName);
+                    resolve();
+                });
+            });
+
+            await videoInfoPromise; // Wait for videoName to be updated
+
+            // Are the same
+            const inputFilePath = './temp/' + videoName + '_b' + '.mp4';
+            const outputFilePath = './temp/' + videoName + '_b' + '.mp4';
+
+            await new Promise((resolve, reject) => {
+                console.log("Writing: " + videoName + '_b' + ".mp4");
+                stream.pipe(fs.createWriteStream(inputFilePath))
+                    .on('finish', resolve)
+                    .on('error', reject);
+            });
+
+            // Send the MP4 file for download
+            res.download(outputFilePath, videoName + '_b' + '.mp4', async (err) => {
+                if (err) {
+                    console.error('Error:', err);
+                } else {
+                    console.log('File sent successfully');
+                    // Delete the files after the download is complete
+                    const filesToDelete = [
+                        './temp/' + videoName + '_b' + '.mp4',
+                    ];
+
+                    filesToDelete.forEach((filePath) => {
+                        fs.unlink(filePath, (err) => {
+                            if (err) {
+                                console.error('Error deleting file:', err);
+                            } else {
+                                console.log('File deleted successfully:', filePath);
+                            }
+                        });
+                    });
+                    fs.appendFile('./logs/success/' + videoName + "_b" + ".txt", "", (err) => {
+                        if (err) {
+                            console.error('Error writing to log file:', err);
+                        } else {
+                            console.log('Log entry written to file.');
+                        }
+                    });
+                }
+            });    
+
+            } else {
+                // Good quality download
+
+            var soundStream = ytdl(url, {
+                format: 'mp4',
+                filter: 'audioonly'
+            });
+
+            var videoStream = ytdl(url, {
+                format: 'mp4'
+            });
+
+            var videoName = "test";
+
+            const videoInfoPromise = new Promise((resolve) => {
+                soundStream.on('info', (info) => {
+                    videoName = info.videoDetails.title.replace(/[#<>$+%!^&*´``~'|{}?=/\\@]/g, '-').replace(/ä/g, 'ae').replace(/ü/g, 'ue').replace(/ö/g, 'oe');
+                    console.log("Getting: " + videoName);
+                    resolve();
+                });
+            });
+
+            await videoInfoPromise; // Wait for videoName to be updated
+
+            // The rest of your code that depends on the updated videoName
+            const inputSoundFilePath = './temp/' + videoName + '_s' + '.mp4';
+            const inputVideoFilePath = './temp/' + videoName + '_v' + '.mp4';
+
+            const outputFilePath = './temp/' + videoName + '_g' + '.mp4';
+
+            await new Promise((resolve, reject) => {
+                console.log("Writing: " + videoName + '_s' + ".mp4");
+                soundStream.pipe(fs.createWriteStream(inputSoundFilePath))
+                    .on('finish', resolve)
+                    .on('error', reject);
+            });
+
+            await new Promise((resolve, reject) => {
+                console.log("Writing: " + videoName + '_v' + ".mp4");
+                videoStream.pipe(fs.createWriteStream(inputVideoFilePath))
+                    .on('finish', resolve)
+                    .on('error', reject);
+            });
+
+            await new Promise((resolve, reject) => {
+                console.log("Merging: " + videoName + "to .mp4");
+                // Merge audio and video
+                ffmpeg()
+                    .input(inputVideoFilePath)
+                    .input(inputSoundFilePath)
+                    .outputOptions('-c:v', 'copy') // Copy video stream
+                    .outputOptions('-c:a', 'aac') // Encode audio stream using AAC
+                    .outputOptions('-strict', 'experimental') // Enable experimental codecs
+                    .save(outputFilePath)
+                    .on('end', () => {
+                        resolve(); // Resolve the promise when merging is complete
+                    })
+                    .on('error', (err) => {
+                        console.error('Error:', err);
+                        reject(err); // Reject the promise if an error occurs
+                    });
+            });
+
+            res.download(outputFilePath, videoName + '_g' + '.mp4', async (err) => {
+                if (err) {
+                    console.error('Error:', err);
+                } else {
+                    console.log('File sent successfully');
+                    // Delete the files after the download is complete
+                    const filesToDelete = [
+                        './temp/' + videoName + '_v' + '.mp4',
+                        './temp/' + videoName + '_s' + '.mp4',
+                        './temp/' + videoName + '_g' + '.mp4',
+                    ];
+
+                    filesToDelete.forEach((filePath) => {
+                        fs.unlink(filePath, (err) => {
+                            if (err) {
+                                console.error('Error deleting file:', err);
+                            } else {
+                                console.log('File deleted successfully:', filePath);
+                            }
+                        });
+                    });
+                    fs.appendFile('./logs/success/' + videoName + "_g" + ".txt", "", (err) => {
+                        if (err) {
+                            console.error('Error writing to log file:', err);
+                        } else {
+                            console.log('Log entry written to file.');
+                        }
+                    });
+                }
+            });
+        }
+    }
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send('Aywa versuch mal nochmal neu (wenn wieder net klappt schick pls Bild an AK)' +
+            '\n' + '\n' + '\n' + error);
+    }
+});
+
+
+
+/* new
+app.get('/download', (req, res) => {
+    var url = req.query.url;
+    res.header("Content-Disposition", 'attachment; filename="Video.mp4');
+    
+    var stream = ytdl(url, {format: 'mp4'})
+    var proc = new ffmpeg({source:stream})
+    proc.setFfmpegPath('/Applications/ffmpeg')
+    proc.saveToFile(mp3, (stdout, stderr)->
+            return console.log stderr if err?
+      //      return console.log 'done'
+     //   )
+});
+// new 
+*/
