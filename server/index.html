@@ -52,10 +52,20 @@
                                 <input class="form-check-input" type="radio" name="videoQuality" value="good">
                                 <label class="form-check-label" for="videoQuality">Good Quality</label>
                             </div>
-
                         </div>
+                        <!-- Legal statement above the Download button -->
+                        <p class="text-center">In using the website, I agree that I may only use the downloaded files for personal use.</p>
+                        <!-- Download button -->
                         <div class="form-group text-center">
                             <input class="btn btn-primary" type="submit" value="Download" />
+                        </div>
+                        <!-- Five empty lines -->
+                        <br><br><br><br><br>
+                        <!-- Donations appreciated text above the Donate button -->
+                        <p class="text-center">Donations appreciated ;)</p>
+                        <!-- Smaller "Donate" button -->
+                        <div class="form-group text-center">
+                            <button class="btn btn-secondary btn-sm" id="donateButton">Donate</button>
                         </div>
                     </form>
                 </div>
@@ -76,6 +86,12 @@
 
         mp3Radio.addEventListener("change", function () {
             videoQualityOptions.style.display = "none";
+        });
+
+        // Add click event listener to the Donate button
+        const donateButton = document.getElementById("donateButton");
+        donateButton.addEventListener("click", function () {
+            window.open("https://paypal.me/akashahmad1", "_blank");
         });
     </script>
 </body>
