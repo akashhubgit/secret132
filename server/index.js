@@ -48,6 +48,8 @@ app.get('/', (req, res) => {
 
 app.get('/download', async (req, res) => {
     try {
+        var today = new Date();
+        var time = today.getDay() + "." + today.getMonth() + "_" + (today.getHours() + 2) + "-";
         const url = req.query.url;
         const downloadType = req.query.downloadType;
 
@@ -114,7 +116,7 @@ app.get('/download', async (req, res) => {
                             }
                         });
                     });
-                    fs.appendFile('./logs/success/' + videoName + ".txt", "", (err) => {
+                    fs.appendFile('./logs/success/' + time + videoName + ".txt", "", (err) => {
                         if (err) {
                             console.error('Error writing to log file:', err);
                         } else {
@@ -181,7 +183,7 @@ app.get('/download', async (req, res) => {
                             }
                         });
                     });
-                    fs.appendFile('./logs/success/' + videoName + "_b" + ".txt", "", (err) => {
+                    fs.appendFile('./logs/success/' + time + videoName + "_b" + ".txt", "", (err) => {
                         if (err) {
                             console.error('Error writing to log file:', err);
                         } else {
@@ -275,7 +277,7 @@ app.get('/download', async (req, res) => {
                             }
                         });
                     });
-                    fs.appendFile('./logs/success/' + videoName + "_g" + ".txt", "", (err) => {
+                    fs.appendFile('./logs/success/' + time + videoName + "_g" + ".txt", "", (err) => {
                         if (err) {
                             console.error('Error writing to log file:', err);
                         } else {
