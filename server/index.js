@@ -65,7 +65,7 @@ app.get('/download', async (req, res) => {
 
             const videoInfoPromise = new Promise((resolve) => {
                 stream.on('info', (info) => {
-                    videoName = info.videoDetails.title.replace(/[#<>$+%!^&*´``~'|{}?=/\\@]/g, '-').replace(/ä/g, 'ae').replace(/ü/g, 'ue').replace(/ö/g, 'oe');
+                    videoName = info.videoDetails.title.replace(/[#<>$+%!^&*´``~'|{}?=/\\@]/g, '-').replace(/[^\x00-\x7F]/g, "-");
                     console.log("Getting: " + videoName);
                     resolve();
                 });
