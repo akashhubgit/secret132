@@ -51,12 +51,6 @@ app.get('/download', async (req, res) => {
         var today = new Date();
         var time = today.getDay() + "." + today.getMonth() + "_" + (today.getHours() + 2) + "-";
         const url = req.query.url;
-
-      if (!url.includes("youtu")) {
-        res.status(500).send('Provided link is not a youtube link (if it is contact Akash lol)' +
-            '\n' + '\n' + '\n' + error);
-      }
-      else {
         const downloadType = req.query.downloadType;
 
         if (downloadType.localeCompare('mp4')) {
@@ -294,7 +288,6 @@ app.get('/download', async (req, res) => {
             });
         }
     }
-      }
     } catch (error) {
         console.error('Error:', error);
         res.status(500).send('Aywa versuch mal nochmal neu (wenn wieder net klappt schick pls Bild an AK)' +
