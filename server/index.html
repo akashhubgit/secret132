@@ -25,9 +25,9 @@
             </div>
             <div class="row">
                 <div class="col-12 col-md-4 offset-md-4">
-                    <form action="/download" method="GET">
+                    <form action="/download" method="GET" onsubmit ="checkInput()">
                         <div class="form-group">
-                            <input class="form-control" type="text" name="url" placeholder="https://youtu.be/dQw4w9WgXcQ"
+                            <input class="form-control" id="linkName" type="text" name="url" placeholder="https://youtu.be/dQw4w9WgXcQ"
                                 required />
                         </div>
                         <div class="form-group">
@@ -74,6 +74,18 @@
     </div>
 
     <script>
+        // Check Input onSubmit
+        function checkInput() {
+            const url = document.getElementById("linkName").value;
+            console.log(url);
+            if (url.includes("youtu")) {
+                return true;
+            } else {
+                alert("Invalid url.");
+                return false;
+            }
+        }
+
         // Toggle video quality options based on MP4 selection
         const mp4Radio = document.getElementById("mp4Radio");
         const videoQualityOptions = document.getElementById("videoQualityOptions");
