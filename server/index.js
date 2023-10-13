@@ -52,7 +52,9 @@ app.get('/download', async (req, res) => {
         var time = today.getDay() + "." + today.getMonth() + "_" + (today.getHours() + 2) + "-";
         const url = req.query.url;
 
-      if (url.includes("youtu")) {
+      if (!url.includes("youtu")) {
+        res.status(500).send('Provided link is not a youtube link (if it is contact Akash lol)' +
+            '\n' + '\n' + '\n' + error);
       }
       else {
         const downloadType = req.query.downloadType;
