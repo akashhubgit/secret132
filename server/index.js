@@ -66,7 +66,7 @@ app.get('/download', async (req, res) => {
             const videoInfoPromise = new Promise((resolve) => {
                 stream.on('info', (info) => {
                     videoName = info.videoDetails.title.replace(/[#<>$+%!^&*´``~'|{}?=/\\@]/g, '-').replace(/ä/g, 'ae').replace(/ü/g, 'ue').replace(/ö/g, 'oe');
-                    console.log("Getting: " + videoName);
+                    //console.log("Getting: " + videoName);
                     resolve();
                 });
             });
@@ -78,14 +78,14 @@ app.get('/download', async (req, res) => {
             const outputFilePath = './temp/' + videoName + '.mp3';
 
             await new Promise((resolve, reject) => {
-                console.log("Writing: " + videoName + ".mp4");
+                //console.log("Writing: " + videoName + ".mp4");
                 stream.pipe(fs.createWriteStream(inputFilePath))
                     .on('finish', resolve)
                     .on('error', reject);
             });
 
             await new Promise((resolve, reject) => {
-                console.log("Converting: " + videoName + " to .mp3");
+                //console.log("Converting: " + videoName + " to .mp3");
                 ffmpeg()
                     .input(inputFilePath)
                     .output(outputFilePath)
@@ -100,7 +100,7 @@ app.get('/download', async (req, res) => {
                 if (err) {
                     console.error('Error:', err);
                 } else {
-                    console.log('File sent successfully');
+                    //console.log('File sent successfully');
                     // Delete the files after the download is complete
                     const filesToDelete = [
                         './temp/' + videoName + '.mp4',
@@ -112,7 +112,7 @@ app.get('/download', async (req, res) => {
                             if (err) {
                                 console.error('Error deleting file:', err);
                             } else {
-                                console.log('File deleted successfully:', filePath);
+                                //console.log('File deleted successfully:', filePath);
                             }
                         });
                     });
@@ -120,7 +120,7 @@ app.get('/download', async (req, res) => {
                         if (err) {
                             console.error('Error writing to log file:', err);
                         } else {
-                            console.log('Log entry written to file.');
+                            //console.log('Log entry written to file.');
                         }
                     });
                 }
@@ -145,7 +145,7 @@ app.get('/download', async (req, res) => {
             const videoInfoPromise = new Promise((resolve) => {
                 stream.on('info', (info) => {
                     videoName = info.videoDetails.title.replace(/[#<>$+%!^&*´``~'|{}?=/\\@]/g, '-').replace(/ä/g, 'ae').replace(/ü/g, 'ue').replace(/ö/g, 'oe');
-                    console.log("Getting: " + videoName);
+                    //console.log("Getting: " + videoName);
                     resolve();
                 });
             });
@@ -157,7 +157,7 @@ app.get('/download', async (req, res) => {
             const outputFilePath = './temp/' + videoName + '_b' + '.mp4';
 
             await new Promise((resolve, reject) => {
-                console.log("Writing: " + videoName + '_b' + ".mp4");
+                //console.log("Writing: " + videoName + '_b' + ".mp4");
                 stream.pipe(fs.createWriteStream(inputFilePath))
                     .on('finish', resolve)
                     .on('error', reject);
@@ -168,7 +168,7 @@ app.get('/download', async (req, res) => {
                 if (err) {
                     console.error('Error:', err);
                 } else {
-                    console.log('File sent successfully');
+                    //console.log('File sent successfully');
                     // Delete the files after the download is complete
                     const filesToDelete = [
                         './temp/' + videoName + '_b' + '.mp4',
@@ -179,7 +179,7 @@ app.get('/download', async (req, res) => {
                             if (err) {
                                 console.error('Error deleting file:', err);
                             } else {
-                                console.log('File deleted successfully:', filePath);
+                                //console.log('File deleted successfully:', filePath);
                             }
                         });
                     });
@@ -187,7 +187,7 @@ app.get('/download', async (req, res) => {
                         if (err) {
                             console.error('Error writing to log file:', err);
                         } else {
-                            console.log('Log entry written to file.');
+                            //console.log('Log entry written to file.');
                         }
                     });
                 }
@@ -210,7 +210,7 @@ app.get('/download', async (req, res) => {
             const videoInfoPromise = new Promise((resolve) => {
                 soundStream.on('info', (info) => {
                     videoName = info.videoDetails.title.replace(/[#<>$+%!^&*´``~'|{}?=/\\@]/g, '-').replace(/ä/g, 'ae').replace(/ü/g, 'ue').replace(/ö/g, 'oe');
-                    console.log("Getting: " + videoName);
+                    //console.log("Getting: " + videoName);
                     resolve();
                 });
             });
@@ -224,21 +224,21 @@ app.get('/download', async (req, res) => {
             const outputFilePath = './temp/' + videoName + '_g' + '.mp4';
 
             await new Promise((resolve, reject) => {
-                console.log("Writing: " + videoName + '_s' + ".mp4");
+                //console.log("Writing: " + videoName + '_s' + ".mp4");
                 soundStream.pipe(fs.createWriteStream(inputSoundFilePath))
                     .on('finish', resolve)
                     .on('error', reject);
             });
 
             await new Promise((resolve, reject) => {
-                console.log("Writing: " + videoName + '_v' + ".mp4");
+                //console.log("Writing: " + videoName + '_v' + ".mp4");
                 videoStream.pipe(fs.createWriteStream(inputVideoFilePath))
                     .on('finish', resolve)
                     .on('error', reject);
             });
 
             await new Promise((resolve, reject) => {
-                console.log("Merging: " + videoName + "to .mp4");
+                //console.log("Merging: " + videoName + "to .mp4");
                 // Merge audio and video
                 ffmpeg()
                     .input(inputVideoFilePath)
@@ -260,7 +260,7 @@ app.get('/download', async (req, res) => {
                 if (err) {
                     console.error('Error:', err);
                 } else {
-                    console.log('File sent successfully');
+                    //console.log('File sent successfully');
                     // Delete the files after the download is complete
                     const filesToDelete = [
                         './temp/' + videoName + '_v' + '.mp4',
@@ -273,7 +273,7 @@ app.get('/download', async (req, res) => {
                             if (err) {
                                 console.error('Error deleting file:', err);
                             } else {
-                                console.log('File deleted successfully:', filePath);
+                                //console.log('File deleted successfully:', filePath);
                             }
                         });
                     });
@@ -281,7 +281,7 @@ app.get('/download', async (req, res) => {
                         if (err) {
                             console.error('Error writing to log file:', err);
                         } else {
-                            console.log('Log entry written to file.');
+                            //console.log('Log entry written to file.');
                         }
                     });
                 }
