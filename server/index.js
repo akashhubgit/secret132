@@ -38,13 +38,6 @@ app.get('/', (req, res) => {
     });
 })
 
-
-//app.get('/download', (req, res) => {
-//    var url = req.query.url;
-//    res.header("Content-Disposition", 'attachment; filename="Video.mp4');
-//    ytdl(url, {format: 'mp4'}).pipe(res);
-//});
-
 function timeStampToSeconds(timeStampStr) {
     var seconds = 0;
     seconds += parseInt(timeStampStr.charAt(0) + timeStampStr.charAt(1)) * 60;
@@ -53,32 +46,49 @@ function timeStampToSeconds(timeStampStr) {
     return seconds;
 }
 
-async function createLog(ytName) {
-    var now = new Date().toISOString();;
-    console.log(now);
+async function getCurrentTime() {
+    let now = new Date().toISOString();
     let day = now.substring(8, 10);
     let month = now.substring(5, 7);
     let hours = now.substring(11, 13);
-    var time = day + "." + month + "_" + hours + "-";
 
-    fs.appendFile('./logs/success/' + time + ytName + ".txt", "", (err) => {
+    return day + "." + month + "_" + hours + "-";
+}
+
+async function createFailureLog(errorString, ytName) {
+    let time = getCurrentTime();
+
+    fs.appendFile('./logs/failure/' + time + ytName + ".txt", errorString, (err) => {
         if (err) {
-            console.error('Error writing to log file:', err);
-        } else {
-            console.log('Log entry written to file.');
+            console.error('Error creating failure log:\n ', err);
         }
     });
 }
 
-async function deleteFiles(filesToDelete) {
-    
-    filesToDelete.forEach(async (filePath) => {
+async function createSuccessLog(ytName) {
+    var time = getCurrentTime();
+
+    fs.appendFile('./logs/success/' + time + ytName + ".txt", "", (err) => {
+        if (err) {
+            createFailureLog('Error createSuccessLog(): creating log file:\n ' + err, ytName);
+        }
+    });
+}
+
+async function deleteFiles(ytName) {
+    // ATTENTION: COULD BE RACE CONDITION!
+    // USER 1: downloads but USER 2 download same yt -> deletes ongoing download of USER 1
+    let filesToDel = [ `./temp/${ytName}.mp3`, 
+                        `./temp/${ytName}.mp4`, 
+                        `./temp/${ytName}_t.mp3`,
+                        `./temp/${ytName}_t.mp4`,
+                        `./temp/${ytName}_a.mp4`,
+                        `./temp/${ytName}_v.mp4`];
+    filesToDel.forEach(async (filePath) => {
         if (fs.existsSync(filePath)) {
             fs.unlink(filePath, (err) => {
                 if (err) {
-                    console.error('Error deleting file:', err);
-                } else {
-                    console.log('File deleted successfully:', filePath);
+                    createFailureLog('Error deleteFiles(): deleting file:\n' + err, ytName);
                 }
             });
         }
@@ -86,21 +96,18 @@ async function deleteFiles(filesToDelete) {
 
 }
 
-// ALL = [stream, duration, trimStartTime, res]
 async function getYTName(data) {
     return new Promise((resolve, reject) => {
         var stream = data.get("stream");
         stream.on('info', (info) => {
             ytName = info.videoDetails.title.replace(/[#<>$+%!^&*´``~'|{}?=/\\@]/g, '-').replace(/ä/g, 'ae').replace(/ü/g, 'ue').replace(/ö/g, 'oe');
-            console.log("getYTName DONE!");
+            //console.log("getYTName DONE!");
             data.set("ytName", ytName);
             resolve(data);
         });
     })
 }
 
-/*  MP3, b_MP4     -> [stream, duration, trimStartTime, res, ytName]
-*/
 async function downloadMP4BadQuality(data) {
     return new Promise((resolve, reject) => {
         var stream = data.get("stream");
@@ -112,18 +119,17 @@ async function downloadMP4BadQuality(data) {
             .on('finish', () => {
                 resolve(data);
             })
-            .on('error', reject);
-        console.log("downloadMP4BadQuality DONE!");
+            .on('error', () => {
+                createFailureLog("Error downloadMP4BadQuality(): \n", ytName);
+                reject();
+            });
+        //console.log("downloadMP4BadQuality DONE!");
 
-        //data.set("outputFilePath", outputFilePath);
-        //resolve(data);
     });
 }
 
 async function mergeVideoAndAudio(data) {
     return new Promise((resolve, reject) => {
-        //console.log("Merging: " + videoName + "to .mp4");
-        // Merge audio and video
         let outputFilePath = data.get("outputFilePath");
         let videoFilePath = data.get("videoFilePath");
         let audioFilePath = data.get("audioFilePath");
@@ -136,11 +142,11 @@ async function mergeVideoAndAudio(data) {
             .outputOptions('-strict', 'experimental') // Enable experimental codecs
             .save(outputFilePath)
             .on('end', () => {
-                resolve(data); // Resolve the promise when merging is complete
+                resolve(data); 
             })
             .on('error', (err) => {
                 console.error('Error:', err);
-                reject(err); // Reject the promise if an error occurs
+                reject(err);
             });
     });
 }
@@ -189,8 +195,7 @@ async function downloadMP4GoodQuality(data) {
     });
 }
 
-/*  MP3     -> [stream, duration, trimStartTime, res, ytName, outputFilePath]
-*/
+
 async function convertMP4ToMP3(data) {
     var ytName = data.get("ytName");
     var oldOutputFilePath = data.get("outputFilePath");
@@ -210,9 +215,6 @@ async function convertMP4ToMP3(data) {
     });
 }
 
-/*  MP3     -> [stream, duration, trimStartTime, res, ytName, outputFilePath]
-    b_MP4   -> 
-*/
 async function trimFile(data) {
     return new Promise((resolve, reject) => {
         let duration = data.get("duration");
@@ -252,33 +254,21 @@ async function trimFile(data) {
     });
 }
 
-/*  MP3     -> [stream, duration, trimStartTime, res, ytName, outputFilePath]
-*/
 async function sendFile_and_PostProcessing(data) {
     return new Promise((resolve, reject) => {
         let res = data.get("res");
         let outputFilePath = data.get("outputFilePath");
+        let ytName = data.get("ytName");
 
         res.download(outputFilePath, async (err) => {
             if (err) {
                 console.error('Error in res.download()...:', err);
             } else {
                 console.log('File sent successfully');
+                
+                deleteFiles(ytName);
 
-                // Delete the files after the download is complete
-                console.log("deleting All");
-
-                // ATTENTION: COULD BE RACE CONDITION!
-                // USER 1: downloads but USER 2 download same yt -> deletes ongoing download of USER 1
-                let filesToDel = [  `./temp/${ytName}.mp3`, 
-                                    `./temp/${ytName}.mp4`, 
-                                    `./temp/${ytName}_t.mp3`,
-                                    `./temp/${ytName}_t.mp4`,
-                                    `./temp/${ytName}_a.mp4`,
-                                    `./temp/${ytName}_v.mp4`];
-                deleteFiles(filesToDel);
-
-                createLog(ytName);
+                createSuccessLog(ytName);
             }
         });
 
@@ -354,101 +344,6 @@ function downloadMp4_GoodQuality(data) {
     return;
 }
 
-async function downloadMp4_oldGoodQuality(duration, trimStartTime) {
-    // Good quality download
-
-    var soundStream = ytdl(url, {
-        format: 'mp4',
-        filter: 'audioonly'
-    });
-
-    var videoStream = ytdl(url, {
-        format: 'mp4'
-    });
-
-    var videoName = "test";
-
-    const videoInfoPromise = new Promise((resolve) => {
-        soundStream.on('info', (info) => {
-            videoName = info.videoDetails.title.replace(/[#<>$+%!^&*´``~'|{}?=/\\@]/g, '-').replace(/ä/g, 'ae').replace(/ü/g, 'ue').replace(/ö/g, 'oe');
-            //console.log("Getting: " + videoName);
-            resolve();
-        });
-    });
-
-    await videoInfoPromise; // Wait for videoName to be updated
-
-    // The rest of your code that depends on the updated videoName
-    const inputSoundFilePath = './temp/' + videoName + '_s' + '.mp4';
-    const inputVideoFilePath = './temp/' + videoName + '_v' + '.mp4';
-
-    const outputFilePath = './temp/' + videoName + '_g' + '.mp4';
-
-    await new Promise((resolve, reject) => {
-        //console.log("Writing: " + videoName + '_s' + ".mp4");
-        soundStream.pipe(fs.createWriteStream(inputSoundFilePath))
-            .on('finish', resolve)
-            .on('error', reject);
-    });
-
-    await new Promise((resolve, reject) => {
-        //console.log("Writing: " + videoName + '_v' + ".mp4");
-        videoStream.pipe(fs.createWriteStream(inputVideoFilePath))
-            .on('finish', resolve)
-            .on('error', reject);
-    });
-
-    await new Promise((resolve, reject) => {
-        //console.log("Merging: " + videoName + "to .mp4");
-        // Merge audio and video
-        ffmpeg()
-            .input(inputVideoFilePath)
-            .input(inputSoundFilePath)
-            .outputOptions('-c:v', 'copy') // Copy video stream
-            .outputOptions('-c:a', 'aac') // Encode audio stream using AAC
-            .outputOptions('-strict', 'experimental') // Enable experimental codecs
-            .save(outputFilePath)
-            .on('end', () => {
-                resolve(); // Resolve the promise when merging is complete
-            })
-            .on('error', (err) => {
-                console.error('Error:', err);
-                reject(err); // Reject the promise if an error occurs
-            });
-    });
-
-
-    res.download(outputFilePath, videoName + '_g' + '.mp4', async (err) => {
-        if (err) {
-            console.error('Error:', err);
-        } else {
-            //console.log('File sent successfully');
-            // Delete the files after the download is complete
-            const filesToDelete = [
-                './temp/' + videoName + '_v' + '.mp4',
-                './temp/' + videoName + '_s' + '.mp4',
-                './temp/' + videoName + '_g' + '.mp4',
-            ];
-
-            filesToDelete.forEach((filePath) => {
-                fs.unlink(filePath, (err) => {
-                    if (err) {
-                        console.error('Error deleting file:', err);
-                    } else {
-                        //console.log('File deleted successfully:', filePath);
-                    }
-                });
-            });
-            fs.appendFile('./logs/success/' + time + videoName + "_g" + ".txt", "", (err) => {
-                if (err) {
-                    console.error('Error writing to log file:', err);
-                } else {
-                    //console.log('Log entry written to file.');
-                }
-            });
-        }
-    });
-}
 app.get('/download', async (req, res) => {
     try {
         console.log(req.query);
@@ -456,10 +351,10 @@ app.get('/download', async (req, res) => {
         const downloadType = req.query.downloadType;
 
 
-        const trimCheckboxValue = req.query.trimCheckboxValue;        var duration = -1;
-
-
+        const trimCheckboxValue = req.query.trimCheckboxValue;        
+        var duration = -1;
         var trimStartTime = -1;
+
         if (!trimCheckboxValue.localeCompare('on')) {
             trimStartTime = timeStampToSeconds(req.query.cutFrom);
             const cutToSecs = timeStampToSeconds(req.query.cutTo);
@@ -497,101 +392,3 @@ app.get('/download', async (req, res) => {
             '\n' + '\n' + '\n' + error);
     }
 });
-
-
-/* new
-app.get('/download', (req, res) => {
-    var url = req.query.url;
-    res.header("Content-Disposition", 'attachment; filename="Video.mp4');
-    
-    var stream = ytdl(url, {format: 'mp4'})
-    var proc = new ffmpeg({source:stream})
-    proc.setFfmpegPath('/Applications/ffmpeg')
-    proc.saveToFile(mp3, (stdout, stderr)->
-            return console.log stderr if err?
-      //      return console.log 'done'
-     //   )
-});
-// new 
-*/
-
-
-/*
-
-   data.push(
-        { key: "stream", value: stream},
-        { key: "duration", value: duration},
-        { key: "trimStartTime",value: trimStartTime},
-        { key: "res", value: res});
-
-function trimFile(data) {
-  return new Promise((resolve, reject) => {
-    let duration = data[1];
-    if (duration > 0) {
-    let trimStartTime = data[2];
-    let inputFilePath = data[5];
-    console.log("trimming starting broo");
-    var dotIndex = inputFilePath.lastIndexOf(".");
-    var outputFilePath = inputFilePath.substring(0, dotIndex) + "_t" + inputFilePath.substring(dotIndex);
-    console.log("Path= " + inputFilePath + "\nPath= " + outputFilePath);
-    console.log("trimStartTime= " + trimStartTime + ", duration= " + duration);
-    
-    ffmpeg(inputFilePath)
-            //      .setFfmpegPath(ffmpegStatic)
-            //      .setFfprobePath(ffprobe.path)
-            .output(outputFilePath)
-            .setStartTime(trimStartTime)
-            .setDuration(duration)
-            //      .withVideoCodec('copy')
-            //      .withAudioCodec('copy')
-            .on('end', function(err) {
-                if (!err) {
-                    console.log('trimming Done');
-                }
-            })
-            .on('error', function(err) {
-                console.log('error in trimFile(): ', err);
-            })
-            .run();
-    }        
-    resolve(data);
-    });
-}
-*/
-
-/*
- * async function trimFile(data) {
-        console.log("trimming starting broo");
-  return new Promise((resolve, reject) => {
-    let duration = data[1];
-    if (duration > 0) {
-    let trimStartTime = data[2];
-    let inputFilePath = data[5];
-
-    var dotIndex = inputFilePath.lastIndexOf(".");
-    var outputFilePath = inputFilePath.substring(0, dotIndex) + "_t" + inputFilePath.substring(dotIndex);
-    console.log("Path= " + inputFilePath + "\nPath= " + outputFilePath);
-    console.log("trimStartTime= " + trimStartTime + ", duration= " + duration + "\n\n");
-    
-    const trim = new ffmpeg({source: inputFilePath});
-    trim
-        .setStartTime(trimStartTime)
-        .setDuration(duration)
-        .on("start", function(commandLine) {
-            console.log("Spawned ffmpeg with: " + commandLine)
-        })
-        .on('end', function(err) {
-                if (!err) {
-                    console.log('trimming Done');
-                }
-            })
-        .on('error', function(err) {
-                console.log('error in trimFile(): ', err);
-            })
-        .saveToFile(outputFilePath);
-    
-    }        
-    resolve(data);
-    });
-}
-*/
