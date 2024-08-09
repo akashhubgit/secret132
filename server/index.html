@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <title>AK's YouTube Downloader</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -8,146 +8,209 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <style type="text/css">
-      /* Updated custom style for the trim textboxes */
       .trim-group {
         display: flex;
-        /* Use flexbox to have items in a row */
         align-items: center;
-        /* Center items vertically */
       }
 
       .trim-label {
         margin-right: 1em;
-        /* Adjust spacing between labels and textboxes */
       }
 
       #cutFrom {
         width: 6em;
-        /* Set the width to accommodate six digits minus 50px */
         margin-right: 100px;
-        /* Adjust margin to create space between the "cutFrom" box and the label "To" */
       }
 
       #cutTo {
         max-width: 6em;
-        /* Set the maximum width to accommodate six digits */
+      }
+
+      .loading-circle {
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        border: 3px solid rgba(0, 0, 0, 0.1);
+        border-radius: 50%;
+        border-top: 3px solid #007bff;
+        animation: spin 1s linear infinite;
+        margin-left: 10px;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
       }
     </style>
-  </head>
-  <body>
+</head>
+<body>
     <div id="banner">
-      <div class="container-fluid">
-        <div class="jumbotron text-center">
-          <h3>AK's YouTube Downloader</h3>
-        </div>
-        <div class="row">
-          <div class="col-12 col-md-4 offset-md-4">
-            <form action="/download" method="GET" onsubmit="checkInput(event)">
-              <div class="form-group">
-                <input class="form-control" id="linkName" type="text" name="url" placeholder="https://youtu.be/dQw4w9WgXcQ" required />
-              </div>
-              <div class="form-group">
-                <label for="downloadType">Select download type:</label>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="downloadType" value="mp3" checked>
-                  <label class="form-check-label" for="downloadType">MP3</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="downloadType" value="mp4" id="mp4Radio">
-                  <label class="form-check-label" for="downloadType">MP4</label>
-                </div>
-              </div>
-              <div class="form-group" id="videoQualityOptions" style="display: none;">
-                <label for="videoQuality">Select video quality (MP4 only):</label>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="videoQuality" value="bad" checked>
-                  <label class="form-check-label" for="videoQuality">Bad Quality</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="videoQuality" value="good">
-                  <label class="form-check-label" for="videoQuality">Good Quality</label>
-                </div>
-              </div>
-              
-              <br>
-              
-              <div class="form-group form-check">
-                <input class="form-check-input" type="checkbox" id="trimCheckbox">
-                <label class="form-check-label" for="trimCheckbox">Trim (Schneiden)?</label>
-              </div>
-              
-              
-              <!-- Trim functionality -->
-              <input type="hidden" name="trimCheckboxValue" id="trimCheckboxValue" value="off">
-              
-              <div class="form-group trim-group" style="display: none;">
-                <label class="trim-label" for="cutFrom">From:</label>
-                <input class="form-control" id="cutFrom" type="text" name="cutFrom" value="00:00" />
-                <label class="trim-label" for="cutTo">To:</label>
-                <input class="form-control" id="cutTo" type="text" name="cutTo" value="00:00" />
-              </div>
-
-              <!-- Legal statement above the Download button -->
-              <p class="text-center">Using this tool, I agree that I may use the downloaded files for personal use only.</p>
-              <!-- Download button -->
-              <div class="form-group text-center">
-                <input class="btn btn-primary" type="submit" value="Download" />
-              </div>
-              <!-- Five empty lines -->
-            </form>
-            <br>
-            <br>
-            <!-- Donations appreciated text above the Donate button -->
-            <p class="text-center">Donations appreciated ;)</p>
-            <!-- Smaller "Donate" button -->
-            <div class="form-group text-center">
-              <button class="btn btn-secondary btn-sm" id="donateButton">Donate</button>
+        <div class="container-fluid">
+            <div class="jumbotron text-center">
+                <h3>AK's YouTube Downloader</h3>
             </div>
-          </div>
+            <div class="row">
+                <div class="col-12 col-md-4 offset-md-4">
+                    <form action="/download" method="GET" onsubmit="checkInput(event)">
+                        <div class="form-group">
+                            <input class="form-control" id="linkName" type="text" name="url" placeholder="https://youtu.be/dQw4w9WgXcQ" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="downloadType">Select download type:</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="downloadType" value="mp3" checked>
+                                <label class="form-check-label" for="downloadType">MP3</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="downloadType" value="mp4" id="mp4Radio">
+                                <label class="form-check-label" for="downloadType">MP4</label>
+                            </div>
+                        </div>
+                        <div class="form-group" id="videoQualityOptions" style="display: none;">
+                            <label for="videoQuality">Select video quality (MP4 only):</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="videoQuality" value="bad" checked>
+                                <label class="form-check-label" for="videoQuality">Bad Quality</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="videoQuality" value="good">
+                                <label class="form-check-label" for="videoQuality">Good Quality</label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group form-check">
+                            <input class="form-check-input" type="checkbox" id="trimCheckbox">
+                            <label class="form-check-label" for="trimCheckbox">Trim (Schneiden)?</label>
+                        </div>
+                        
+                        <input type="hidden" name="trimCheckboxValue" id="trimCheckboxValue" value="off">
+                        
+                        <div class="form-group trim-group" style="display: none;">
+                            <label class="trim-label" for="cutFrom">From:</label>
+                            <input class="form-control" id="cutFrom" type="text" name="cutFrom" value="00:00" />
+                            <label class="trim-label" for="cutTo">To:</label>
+                            <input class="form-control" id="cutTo" type="text" name="cutTo" value="00:00" />
+                        </div>
+
+                        <!-- Place for progress messages and loading circle -->
+                        <div class="form-group text-center">
+                            <p id="progressMessage" style="display: none;">
+                                <span id="loadingCircle" class="loading-circle"></span>
+                            </p>
+                        </div>
+                        
+                        <!-- Download button -->
+                        <div class="form-group text-center">
+                            <input class="btn btn-primary" type="submit" value="Download" />
+                        </div>
+                        
+                        <!-- Five empty lines -->
+                        <br><br>
+
+                        <p class="text-center">Donations appreciated ;)</p>
+                        <div class="form-group text-center">
+                            <button class="btn btn-secondary btn-sm" id="donateButton">Donate</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
     <script>
-      // Check Input onSubmit
-      function checkInput(event) {
-  const url = document.getElementById("linkName").value;
-  const trimCheckbox = document.getElementById("trimCheckbox");
-  
-  // Explicitly set the value of the trimCheckbox in the form data
-  document.getElementById("trimCheckboxValue").value = trimCheckbox.checked ? "on" : "off";
+    document.addEventListener("DOMContentLoaded", function() {
+        // WebSocket connection
+        const socket = new WebSocket('ws://localhost:8080'); // Ensure this matches your server's WebSocket URL
 
-  console.log(url);
-  if (url.includes("youtu")) {
-    return true;
-  } else {
-    alert("Invalid url.");
-    event.preventDefault();
-  }
-}
-      // Toggle video quality options based on MP4 selection
-      const mp4Radio = document.getElementById("mp4Radio");
-      const videoQualityOptions = document.getElementById("videoQualityOptions");
-      mp4Radio.addEventListener("change", function() {
-        videoQualityOptions.style.display = this.checked ? "block" : "none";
-      });
-      const mp3Radio = document.querySelector("input[name='downloadType'][value='mp3']");
-      mp3Radio.addEventListener("change", function() {
-        videoQualityOptions.style.display = "none";
-      });
-      // Add click event listener to the Donate button
-      const donateButton = document.getElementById("donateButton");
-      donateButton.addEventListener("click", function() {
-        window.open("https://paypal.me/akashahmad1", "_blank");
-      });
-      
-      
-      // Toggle trim-group based on Trim checkbox
-      const trimCheckbox = document.getElementById("trimCheckbox");
-      const trimGroup = document.querySelector(".trim-group");
-      trimCheckbox.addEventListener("change", function () {
-        trimGroup.style.display = this.checked ? "flex" : "none";
-      });
+        socket.onopen = function(event) {
+            console.log('WebSocket is connected.');
+        };
 
-    </script>
-  </body>
+        socket.onmessage = function(event) {
+            console.log('Message from server:', event.data); // Debugging line
+
+            // Get DOM elements
+            const progressMessage = document.getElementById('progressMessage');
+            const loadingCircle = document.getElementById('loadingCircle');
+
+            // Check if elements exist
+            if (!progressMessage) {
+                console.error('Element with ID "progressMessage" is not found in the DOM.');
+                return;
+            }
+
+            if (!loadingCircle) {
+                console.error('Element with ID "loadingCircle" is not found in the DOM.');
+                return;
+            }
+
+            try {
+                const message = JSON.parse(event.data);
+                console.log('Parsed message:', message); // Debugging line
+
+                if (message.message === "HideCircle") {
+                    loadingCircle.style.display = "none";
+                    progressMessage.innerText = "Download complete!";
+                } else {
+                    loadingCircle.style.display = "inline-block";
+                    progressMessage.innerText = message.message;
+                }
+
+                // Make sure progressMessage is visible
+                progressMessage.style.display = "block";
+
+            } catch (error) {
+                console.error('Error parsing message:', error);
+            }
+        };
+
+        socket.onerror = function(event) {
+            console.error('WebSocket error:', event);
+        };
+
+        socket.onclose = function(event) {
+            console.log('WebSocket connection closed.');
+        };
+
+        // Check Input onSubmit
+        window.checkInput = function(event) {
+            const url = document.getElementById("linkName").value;
+            const trimCheckbox = document.getElementById("trimCheckbox");
+
+            document.getElementById("trimCheckboxValue").value = trimCheckbox.checked ? "on" : "off";
+
+            if (url.includes("youtu")) {
+                return true;
+            } else {
+                alert("Invalid url.");
+                event.preventDefault();
+            }
+        };
+
+        // Toggle video quality options based on MP4 selection
+        const mp4Radio = document.getElementById("mp4Radio");
+        const videoQualityOptions = document.getElementById("videoQualityOptions");
+        mp4Radio.addEventListener("change", function() {
+            videoQualityOptions.style.display = this.checked ? "block" : "none";
+        });
+
+        const mp3Radio = document.querySelector("input[name='downloadType'][value='mp3']");
+        mp3Radio.addEventListener("change", function() {
+            videoQualityOptions.style.display = "none";
+        });
+
+        // Add click event listener to the Donate button
+        const donateButton = document.getElementById("donateButton");
+        donateButton.addEventListener("click", function() {
+            window.open("https://paypal.me/akashahmad1", "_blank");
+        });
+
+        // Toggle trim-group based on Trim checkbox
+        const trimCheckbox = document.getElementById("trimCheckbox");
+        const trimGroup = document.querySelector(".trim-group");
+        trimCheckbox.addEventListener("change", function () {
+            trimGroup.style.display = this.checked ? "flex" : "none";
+        });
+    });
+</script>
+</body>
 </html>
