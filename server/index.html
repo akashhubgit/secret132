@@ -95,6 +95,9 @@
               </div>
               <!-- Five empty lines -->
             </form>
+
+            <span id="data_field_id"></span>
+
             <br>
             <br>
             <!-- Donations appreciated text above the Donate button -->
@@ -148,6 +151,30 @@
         trimGroup.style.display = this.checked ? "flex" : "none";
       });
 
+
+      // Create WebSocket connection.
+const socket = new WebSocket("ws://localhost:8080");
+
+// Listen for messages
+socket.addEventListener("message", (event) => {
+  console.log("Message from server ", event.data);
+  document.getElementById("data_field_id").textContent = event.data;
+});
+
+socket.onmessage = function (event) {
+  console.log("Message from server ", event.data);
+   document.getElementById("data_field_id").textContent = event.data;
+};
+
+// Log WebSocket close event
+socket.addEventListener("close", (event) => {
+  console.log("WebSocket is closed now.");
+});
+
+// Log WebSocket error event
+socket.addEventListener("error", (event) => {
+  console.error("WebSocket error observed:", event);
+});
     </script>
   </body>
 </html>

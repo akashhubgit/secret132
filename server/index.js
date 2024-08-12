@@ -1,15 +1,211 @@
 const express = require('express');
-const cors = require('cors');
+//const cors = require('cors');
 const ytdl = require('@distube/ytdl-core');
 const app = express();
 const fs = require('fs');
-const ffmpegStatic = require('ffmpeg-static');
+//const ffmpegStatic = require('ffmpeg-static');
 const ffmpeg = require('fluent-ffmpeg');
-const ffprobe = require('ffprobe-static');
-const path = require('path');
+//const ffprobe = require('ffprobe-static');
+//const path = require('path');
 const pathtowebsite2 = './website3030/';
 //const MemoryStreams = require('memory-streams');
 app.use('/static', express.static('./static'));
+
+const WebSocket = require("ws")
+
+// WebSocket Server
+const wss = new WebSocket.Server({ port: 8080 });
+
+        
+
+wss.on('connection', (ws) => {
+    
+
+    console.log(new Date().toISOString().substring(11, 19) + ": Client connected");
+    ws.send(new Date().toISOString().substring(11, 19) + " Server ready...");
+
+    setTimeout(function () {
+        ws.send("AWAITED") // will be executed after the specified time
+    }, 5000);
+
+    function sendUpdate(status) {
+        ws.send(status);
+    }
+    
+    ws.on('close', () => {
+        console.log('Client disconnected');
+    });
+
+    async function getYTName(data) {
+        return new Promise((resolve, reject) => {
+            var stream = data.get("stream");
+            sendUpdate("Getting Youtube Video...");
+            stream.on('info', (info) => {
+                ytName = info.videoDetails.title.replace(/[#<>$+%!^&*´``~'|{}?=/\\@]/g, '-').replace(/ä/g, 'ae').replace(/ü/g, 'ue').replace(/ö/g, 'oe');
+                
+                data.set("ytName", ytName);
+                resolve(data);
+            });
+        })
+    }
+
+    async function trimFile(data) {
+        return new Promise((resolve, reject) => {
+            let duration = data.get("duration");
+            if (duration > 0) {
+                ws.send("Trimming file...")
+                console.log("trimming starting broo");
+                let outputFilePath = data.get("outputFilePath");
+            
+                let trimStartTime = data.get("trimStartTime");
+    
+                let dotIndex = outputFilePath.lastIndexOf(".");
+                let trimmedOutputFilePath = outputFilePath.substring(0, dotIndex) + "_t" + outputFilePath.substring(dotIndex);
+    
+    
+                ffmpeg(outputFilePath)
+                    //      .setFfmpegPath(ffmpegStatic)
+                    //      .setFfprobePath(ffprobe.path)
+                    .output(trimmedOutputFilePath)
+                    .setStartTime(trimStartTime)
+                    .setDuration(duration)
+                    //      .withVideoCodec('copy')
+                    //      .withAudioCodec('copy')
+                    .on('end', function(err) {
+                        if (!err) {
+                            console.log('trimming Done');
+                        }
+                        data.set("outputFilePath", trimmedOutputFilePath);
+                        resolve(data);
+                    })
+                    .on('error', function(err) {
+                        console.log('error in trimFile(): ', err);
+                    })
+                    .run();
+    
+            } else {
+                resolve(data);
+            }
+        });
+    }
+    
+    async function sendFile_and_PostProcessing(data) {
+        return new Promise((resolve, reject) => {
+            let res = data.get("res");
+            let outputFilePath = data.get("outputFilePath");
+            let ytName = data.get("ytName");
+    
+            ws.send("File sent :) (Buy me a coffe bruther)");
+
+            res.download(outputFilePath, async (err) => {
+                if (err) {
+                    console.error('Error in res.download()...:', err);
+                } else {
+                    console.log('File sent successfully');
+                    ws.send("File sent :)!!!!!!!");
+                    
+                    deleteFiles(ytName);
+    
+                    createSuccessLog(ytName);
+                }
+            });
+    
+        });
+    }
+
+    function downloadMp4_BadQuality(data) {
+
+        let url = data.get("url");
+    
+        var stream = ytdl(url, {
+            quality: 'highest',
+            filter: 'videoandaudio'
+        });
+    
+        data.set("stream", stream);
+    
+        getYTName(data)
+            .then(downloadMP4BadQuality)
+            .then(trimFile)
+            .then(sendFile_and_PostProcessing);
+            
+        return;
+    
+    }
+
+    async function downloadMP4BadQuality(data) {
+        return new Promise((resolve, reject) => {
+            var stream = data.get("stream");
+            var ytName = data.get("ytName");
+            var outputFilePath = `./temp/${ytName}.mp4`;
+            data.set("outputFilePath", outputFilePath);
+    
+            ws.send("Downloading MP4 ...")
+
+            stream.pipe(fs.createWriteStream(outputFilePath))
+                .on('finish', () => {
+                    resolve(data);
+                })
+                .on('error', () => {
+                    createFailureLog("Error downloadMP4BadQuality(): \n", ytName);
+                    reject();
+                });
+            //console.log("downloadMP4BadQuality DONE!");
+    
+        });
+    }
+
+    app.get('/download', async (req, res) => {
+        try {
+            console.log(req.query);
+            const url = req.query.url;
+            const downloadType = req.query.downloadType;
+    
+    
+            const trimCheckboxValue = req.query.trimCheckboxValue;        
+            var duration = -1;
+            var trimStartTime = -1;
+    
+            if (!trimCheckboxValue.localeCompare('on')) {
+                trimStartTime = timeStampToSeconds(req.query.cutFrom);
+                const cutToSecs = timeStampToSeconds(req.query.cutTo);
+    
+                console.log(trimStartTime + " und " + cutToSecs);
+                var duration = cutToSecs - trimStartTime;
+                console.log("dur = " + duration);
+            }
+            
+            var data = new Map();
+            data.set("url", url);
+            data.set("duration", duration);
+            data.set("trimStartTime", trimStartTime);
+            data.set("res", res);
+    
+    
+            if (!downloadType.localeCompare('mp3')) {
+                downloadMp3(data);
+            } else {
+                // MP4 Download            
+                const quality = req.query.videoQuality;
+    
+                if (!quality.localeCompare('bad')) {
+    
+                    downloadMp4_BadQuality(data);
+    
+                } else {
+    
+                    downloadMp4_GoodQuality(data);
+                }
+            }
+    
+        } catch (error) {
+            console.error('Error:', error);
+            res.status(500).send('Aywa versuch mal nochmal neu (wenn wieder net klappt schick pls Bild an AK)' +
+                '\n' + '\n' + '\n' + error);
+        }
+    });
+  });
+
 
 // Create another Express.js application for the second website
 const secondApp = express();
@@ -96,37 +292,6 @@ async function deleteFiles(ytName) {
 
 }
 
-async function getYTName(data) {
-    return new Promise((resolve, reject) => {
-        var stream = data.get("stream");
-        stream.on('info', (info) => {
-            ytName = info.videoDetails.title.replace(/[#<>$+%!^&*´``~'|{}?=/\\@]/g, '-').replace(/ä/g, 'ae').replace(/ü/g, 'ue').replace(/ö/g, 'oe');
-            //console.log("getYTName DONE!");
-            data.set("ytName", ytName);
-            resolve(data);
-        });
-    })
-}
-
-async function downloadMP4BadQuality(data) {
-    return new Promise((resolve, reject) => {
-        var stream = data.get("stream");
-        var ytName = data.get("ytName");
-        var outputFilePath = `./temp/${ytName}.mp4`;
-        data.set("outputFilePath", outputFilePath);
-
-        stream.pipe(fs.createWriteStream(outputFilePath))
-            .on('finish', () => {
-                resolve(data);
-            })
-            .on('error', () => {
-                createFailureLog("Error downloadMP4BadQuality(): \n", ytName);
-                reject();
-            });
-        //console.log("downloadMP4BadQuality DONE!");
-
-    });
-}
 
 async function mergeVideoAndAudio(data) {
     return new Promise((resolve, reject) => {
@@ -215,65 +380,8 @@ async function convertMP4ToMP3(data) {
     });
 }
 
-async function trimFile(data) {
-    return new Promise((resolve, reject) => {
-        let duration = data.get("duration");
-        if (duration > 0) {
-            console.log("trimming starting broo");
-            let outputFilePath = data.get("outputFilePath");
-        
-            let trimStartTime = data.get("trimStartTime");
-
-            let dotIndex = outputFilePath.lastIndexOf(".");
-            let trimmedOutputFilePath = outputFilePath.substring(0, dotIndex) + "_t" + outputFilePath.substring(dotIndex);
 
 
-            ffmpeg(outputFilePath)
-                //      .setFfmpegPath(ffmpegStatic)
-                //      .setFfprobePath(ffprobe.path)
-                .output(trimmedOutputFilePath)
-                .setStartTime(trimStartTime)
-                .setDuration(duration)
-                //      .withVideoCodec('copy')
-                //      .withAudioCodec('copy')
-                .on('end', function(err) {
-                    if (!err) {
-                        console.log('trimming Done');
-                    }
-                    data.set("outputFilePath", trimmedOutputFilePath);
-                    resolve(data);
-                })
-                .on('error', function(err) {
-                    console.log('error in trimFile(): ', err);
-                })
-                .run();
-
-        } else {
-            resolve(data);
-        }
-    });
-}
-
-async function sendFile_and_PostProcessing(data) {
-    return new Promise((resolve, reject) => {
-        let res = data.get("res");
-        let outputFilePath = data.get("outputFilePath");
-        let ytName = data.get("ytName");
-
-        res.download(outputFilePath, async (err) => {
-            if (err) {
-                console.error('Error in res.download()...:', err);
-            } else {
-                console.log('File sent successfully');
-                
-                deleteFiles(ytName);
-
-                createSuccessLog(ytName);
-            }
-        });
-
-    });
-}
 
 function downloadMp3(data) {
     // MP3 Download    
@@ -298,25 +406,7 @@ function downloadMp3(data) {
     return;
 }
 
-function downloadMp4_BadQuality(data) {
 
-    let url = data.get("url");
-
-    var stream = ytdl(url, {
-        quality: 'highest',
-        filter: 'videoandaudio'
-    });
-
-    data.set("stream", stream);
-
-    getYTName(data)
-        .then(downloadMP4BadQuality)
-        .then(trimFile)
-        .then(sendFile_and_PostProcessing);
-        
-    return;
-
-}
 
 function downloadMp4_GoodQuality(data) {
 
@@ -344,51 +434,4 @@ function downloadMp4_GoodQuality(data) {
     return;
 }
 
-app.get('/download', async (req, res) => {
-    try {
-        console.log(req.query);
-        const url = req.query.url;
-        const downloadType = req.query.downloadType;
 
-
-        const trimCheckboxValue = req.query.trimCheckboxValue;        
-        var duration = -1;
-        var trimStartTime = -1;
-
-        if (!trimCheckboxValue.localeCompare('on')) {
-            trimStartTime = timeStampToSeconds(req.query.cutFrom);
-            const cutToSecs = timeStampToSeconds(req.query.cutTo);
-
-            console.log(trimStartTime + " und " + cutToSecs);
-            var duration = cutToSecs - trimStartTime;
-            console.log("dur = " + duration);
-        }
-        
-        var data = new Map();
-        data.set("url", url);
-        data.set("duration", duration);
-        data.set("trimStartTime", trimStartTime);
-        data.set("res", res);
-
-        if (!downloadType.localeCompare('mp3')) {
-            downloadMp3(data);
-        } else {
-            // MP4 Download            
-            const quality = req.query.videoQuality;
-
-            if (!quality.localeCompare('bad')) {
-
-                downloadMp4_BadQuality(data);
-
-            } else {
-
-                downloadMp4_GoodQuality(data);
-            }
-        }
-
-    } catch (error) {
-        console.error('Error:', error);
-        res.status(500).send('Aywa versuch mal nochmal neu (wenn wieder net klappt schick pls Bild an AK)' +
-            '\n' + '\n' + '\n' + error);
-    }
-});
