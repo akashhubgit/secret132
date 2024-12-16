@@ -38,16 +38,24 @@ wss.on('connection', (ws) => {
 
     async function getYTName(data) {
         return new Promise((resolve, reject) => {
-            var stream = data.get("stream");
+            // var stream = data.get("stream");
+            var url = data.get("url") ;
             sendUpdate("Getting Youtube Video...");
+            ytdl.getBasicInfo(url).then(info => {
+                console.log(info.videoDetails.title);
+                ytName = info.videoDetails.title;
+                data.set("ytName", ytName);
+                resolve(data);
+            }); 
+            /*
             stream.on('info', (info) => {
                 ytName = info.videoDetails.title.replace(/[#<>$+%!^&*´``~'|{}?=/\\@]/g, '-').replace(/ä/g, 'ae').replace(/ü/g, 'ue').replace(/ö/g, 'oe');
                 
                 data.set("ytName", ytName);
                 resolve(data);
-            });
+            }); */
         })
-    }
+    } 
 
     async function trimFile(data) {
         return new Promise((resolve, reject) => {
@@ -117,10 +125,15 @@ wss.on('connection', (ws) => {
 
         let url = data.get("url");
     
-        var stream = ytdl(url, {
-            quality: 'highest',
+        const options = {
+            //format: "highest"
+            //,
+            //quality: 'highest'
+            //,
             filter: 'videoandaudio'
-        });
+        };
+
+        var stream = ytdl(url, options);
     
         data.set("stream", stream);
     
