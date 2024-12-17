@@ -302,10 +302,13 @@ function downloadMp4_BadQuality(data) {
 
     let url = data.get("url");
 
-    var stream = ytdl(url, {
-        quality: 'highest',
+    var stream = ytdl(url
+    ,{
+        //format: 'lowest',
+        //quality: 'lowestvideo',
         filter: 'videoandaudio'
-    });
+        }
+    );
 
     data.set("stream", stream);
 
