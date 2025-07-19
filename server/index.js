@@ -363,7 +363,7 @@ app.get('/download', async (req, res) => {
             const cutToSecs = timeStampToSeconds(req.query.cutTo);
 
             console.log(trimStartTime + " und " + cutToSecs);
-            var duration = cutToSecs - trimStartTime;
+            var duration = cutToSecs - trimStartTime + 1; // +1 for that mini extra step
             console.log("dur = " + duration);
         }
         

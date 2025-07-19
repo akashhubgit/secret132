@@ -1,0 +1,6 @@
+express
+cors
+@distube/ytdl-core
+ffmpeg-static
+fluent-ffmpeg
+ffprobe-static
