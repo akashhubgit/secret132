@@ -7,10 +7,11 @@ const ffmpegStatic = require('ffmpeg-static');
 const ffmpeg = require('fluent-ffmpeg');
 const ffprobe = require('ffprobe-static');
 const path = require('path');
-const pathtowebsite2 = './website3030/';
-//const MemoryStreams = require('memory-streams');
-app.use('/static', express.static('./static'));
 
+//const pathtowebsite2 = './website3030/';
+//app.use('/static', express.static('./static'));
+
+/*
 // Create another Express.js application for the second website
 const secondApp = express();
 
@@ -28,7 +29,9 @@ secondApp.listen(3030, '0.0.0.0', () => {
     console.log("Second website running on http://localhost:3030/");
 });
 
-app.listen(3000, () => {
+*/
+
+app.listen(3030, () => {
     console.log("It Works!");
 });
 
