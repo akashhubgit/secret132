@@ -26,7 +26,7 @@ secondApp.get('/', (req, res) => {
 
 // give access to everyone not only localhost cause of the other website
 secondApp.listen(3030, '0.0.0.0', () => {
-    console.log("Second website running on http://localhost:3030/");
+    //console.log("Second website running on http://localhost:3030/");
 });
 
 */
@@ -104,7 +104,7 @@ async function getYTName(data) {
         var stream = data.get("stream");
         stream.on('info', (info) => {
             ytName = info.videoDetails.title.replace(/[#<>$+%!^&*´``~'|{}?=/\\@]/g, '-').replace(/ä/g, 'ae').replace(/ü/g, 'ue').replace(/ö/g, 'oe');
-            //console.log("getYTName DONE!");
+            ////console.log("getYTName DONE!");
             data.set("ytName", ytName);
             resolve(data);
         });
@@ -162,7 +162,7 @@ async function downloadMP4Video(videoStream, videoFilePath) {
                                             })
                                             .on('error', reject));
 
-    console.log("downloadMP4Video DONE!");
+    //console.log("downloadMP4Video DONE!");
 }
 
 async function downloadMP4Audio(audioStream, audioFilePath) {
@@ -172,7 +172,7 @@ async function downloadMP4Audio(audioStream, audioFilePath) {
                                             })
                                             .on('error', reject));
 
-    console.log("downloadMP4Audio DONE!");
+    //console.log("downloadMP4Audio DONE!");
 }
 
 async function downloadMP4GoodQuality(data) {
@@ -214,7 +214,7 @@ async function convertMP4ToMP3(data) {
             .on('error', reject)
             .on('end', () => resolve(data))
             .run();
-        console.log("convertMP4toMP3 DONE!\n");
+        //console.log("convertMP4toMP3 DONE!\n");
     });
 }
 
@@ -222,7 +222,7 @@ async function trimFile(data) {
     return new Promise((resolve, reject) => {
         let duration = data.get("duration");
         if (duration > 0) {
-            console.log("trimming starting broo");
+            //console.log("trimming starting broo");
             let outputFilePath = data.get("outputFilePath");
         
             let trimStartTime = data.get("trimStartTime");
@@ -241,13 +241,13 @@ async function trimFile(data) {
                 //      .withAudioCodec('copy')
                 .on('end', function(err) {
                     if (!err) {
-                        console.log('trimming Done');
+                        //console.log('trimming Done');
                     }
                     data.set("outputFilePath", trimmedOutputFilePath);
                     resolve(data);
                 })
                 .on('error', function(err) {
-                    console.log('error in trimFile(): ', err);
+                    //console.log('error in trimFile(): ', err);
                 })
                 .run();
 
@@ -267,7 +267,7 @@ async function sendFile_and_PostProcessing(data) {
             if (err) {
                 console.error('Error in res.download()...:', err);
             } else {
-                console.log('File sent successfully');
+                //console.log('File sent successfully');
                 
                 deleteFiles(ytName);
 
@@ -283,7 +283,7 @@ function downloadMp3(data) {
 
     let url = data.get("url");
 
-    console.log(url);
+    //console.log(url);
 
     var stream = ytdl(url, {
         format: 'mp4',
@@ -352,7 +352,7 @@ function downloadMp4_GoodQuality(data) {
 
 app.get('/download', async (req, res) => {
     try {
-        console.log(req.query);
+        //console.log(req.query);
         const url = req.query.url;
         const downloadType = req.query.downloadType;
 
@@ -365,9 +365,9 @@ app.get('/download', async (req, res) => {
             trimStartTime = timeStampToSeconds(req.query.cutFrom);
             const cutToSecs = timeStampToSeconds(req.query.cutTo);
 
-            console.log(trimStartTime + " und " + cutToSecs);
+            //console.log(trimStartTime + " und " + cutToSecs);
             var duration = cutToSecs - trimStartTime + 1; // +1 for that mini extra step
-            console.log("dur = " + duration);
+            //console.log("dur = " + duration);
         }
         
         var data = new Map();
