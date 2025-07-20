@@ -93,7 +93,7 @@ async function getCurrentTime() {
 }
 
 async function createFailureLog(errorString, ytName) {
-    let time = getCurrentTime();
+    let time = await getCurrentTime();
 
     fs.appendFile('./logs/failure/' + time + ytName + ".txt", errorString, (err) => {
         if (err) {
@@ -103,7 +103,7 @@ async function createFailureLog(errorString, ytName) {
 }
 
 async function createSuccessLog(ytName) {
-    var time = getCurrentTime();
+    let time = await getCurrentTime();
 
     fs.appendFile('./logs/success/' + time + ytName + ".txt", "", (err) => {
         if (err) {
