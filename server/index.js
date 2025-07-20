@@ -101,6 +101,11 @@ async function createFailureLog(errorString, ytName) {
             console.error('Error creating failure log:\n ', err);
         }
     });
+    fs.writeFile('./logs/failure/' + time + ytName + ".txt", errorString, (err) => {
+        if (err) {
+            console.error('Error writing to failure log:\n ', err);
+        }
+    });
 }
 
 async function createSuccessLog(ytName) {
