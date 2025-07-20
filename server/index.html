@@ -72,7 +72,7 @@
             <form action="/download" method="GET" onsubmit="checkInput(event)">
               <div class="form-group">
                 <div class="input-group">
-                <input class="form-control" id="linkName" type="text" name="url" placeholder="https://youtu.be/dQw4w9WgXcQ" required />
+                  <input class="form-control" id="linkName" type="text" name="url" placeholder="https://youtu.be/dQw4w9WgXcQ" required />
                   <div class="input-group-append">
                     <button class="btn btn-outline-secondary" type="button" id="clearUrl">&times;</button>
                   </div>
@@ -148,7 +148,7 @@
       // checkInput for dangerous chars 
       function checkInput(event) {
         event.preventDefault();  // Always prevent default form submission
-        
+
         const url = document.getElementById("linkName").value;
         if (!url.includes("youtu")) {
           alert("Invalid url.");
@@ -161,7 +161,7 @@
         
         // Get form data
         const downloadType = document.querySelector('input[name="downloadType"]:checked').value;
-        const videoQuality = downloadType === 'mp4' ? 
+        const videoQuality = downloadType === 'mp4' ?
           document.querySelector('input[name="videoQuality"]:checked').value : '';
         const cutFrom = document.getElementById("cutFrom").value;
         const cutTo = document.getElementById("cutTo").value;
@@ -207,38 +207,38 @@
         statusText.textContent = 'Initializing download...';
 
         const eventSource = new EventSource(`/status/${requestId}`);
-        
+
         eventSource.onopen = function () {
-            console.log("SSE connection opened for requestId:", requestId);
+          console.log("SSE connection opened for requestId:", requestId);
         };
-        
+
         eventSource.onmessage = function (event) {
-            console.log("Received status:", event.data);
-            if (event.data) {
-                statusText.textContent = event.data;
+          console.log("Received status:", event.data);
+          if (event.data) {
+            statusText.textContent = event.data;
                 
                 // Close connection and hide spinner when download is complete
-                if (event.data.includes("Preparing download")) {
-                    setTimeout(() => {
-                        eventSource.close();
-                        statusDiv.style.display = 'none';
-                        spinner.style.display = 'none';
-                    }, 1000);
-                }
+            if (event.data.includes("Preparing download")) {
+              setTimeout(() => {
+                eventSource.close();
+                statusDiv.style.display = 'none';
+                spinner.style.display = 'none';
+              }, 1000);
             }
+          }
         };
 
         eventSource.onerror = function (error) {
-            console.error("EventSource error:", error);
+          console.error("EventSource error:", error);
         };
 
         // Cleanup after 5 minutes
         setTimeout(() => {
-            if (eventSource.readyState !== EventSource.CLOSED) {
-                console.log("Closing stale connection");
-                eventSource.close();
-                statusText.textContent = 'Download timed out. Please try again.';
-            }
+          if (eventSource.readyState !== EventSource.CLOSED) {
+            console.log("Closing stale connection");
+            eventSource.close();
+            statusText.textContent = 'Download timed out. Please try again.';
+          }
         }, 300000);
       }
 
@@ -258,7 +258,7 @@
       donateButton.addEventListener("click", function () {
         window.open("https://paypal.me/akashahmad1", "_blank");
       });
-      
+
       
       // Toggle trim-group based on Trim checkbox
       const trimCheckbox = document.getElementById("trimCheckbox");
