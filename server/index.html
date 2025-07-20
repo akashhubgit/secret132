@@ -32,6 +32,24 @@
         max-width: 6em;
         /* Set the maximum width to accommodate six digits */
       }
+
+      /* Loading spinner styles */
+      .spinner {
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-radius: 50%;
+        border-top: 3px solid #3498db;
+        animation: spin 1s linear infinite;
+        display: inline-block;
+        margin-left: 10px;
+        vertical-align: middle;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
     </style>
   </head>
   <body>
@@ -95,7 +113,8 @@
               </div>
               <!-- div for status updates -->
               <div id="status" class="alert alert-info" style="display: none;">
-                <p id="statusText"></p>
+                <p id="statusText" style="display: inline;"></p>
+                <div class="spinner" style="display: none;"></div>
               </div>
               <!-- Five empty lines -->
             </form>
@@ -168,7 +187,9 @@
       function startStatusUpdates(requestId) {
         const statusDiv = document.getElementById('status');
         const statusText = document.getElementById('statusText');
+        const spinner = statusDiv.querySelector('.spinner');
         statusDiv.style.display = 'block';
+        spinner.style.display = 'inline-block';
         statusText.textContent = 'Initializing download...';
 
         const eventSource = new EventSource(`/status/${requestId}`);
@@ -182,11 +203,12 @@
             if (event.data) {
                 statusText.textContent = event.data;
                 
-                // Close connection when download is complete
+                // Close connection and hide spinner when download is complete
                 if (event.data.includes("Preparing download")) {
                     setTimeout(() => {
                         eventSource.close();
                         statusDiv.style.display = 'none';
+                        spinner.style.display = 'none';
                     }, 1000);
                 }
             }
