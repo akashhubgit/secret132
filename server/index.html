@@ -8,6 +8,15 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <style type="text/css">
+      body {
+        background-color: #CCA9DD;
+      }
+      .jumbotron {
+        padding: 2rem 1rem;
+        margin: 0 auto;
+        max-width: 33%;
+        margin-bottom: 2rem;
+      }
       /* Updated custom style for the trim textboxes */
       .trim-group {
         display: flex;
@@ -68,11 +77,11 @@
                 <label for="downloadType">Select download type:</label>
                 <div class="form-check">
                   <input class="form-check-input" type="radio" name="downloadType" value="mp3" checked>
-                  <label class="form-check-label" for="downloadType">MP3</label>
+                  <label class="form-check-label" for="downloadType">MP3 🎵</label>
                 </div>
                 <div class="form-check">
                   <input class="form-check-input" type="radio" name="downloadType" value="mp4" id="mp4Radio">
-                  <label class="form-check-label" for="downloadType">MP4</label>
+                  <label class="form-check-label" for="downloadType">MP4 🎞️</label>
                 </div>
               </div>
               <div class="form-group" id="videoQualityOptions" style="display: none;">
@@ -91,7 +100,7 @@
               
               <div class="form-group form-check">
                 <input class="form-check-input" type="checkbox" id="trimCheckbox">
-                <label class="form-check-label" for="trimCheckbox">Trim (Schneiden)?</label>
+                <label class="form-check-label" for="trimCheckbox">Trim (Schneiden)? ✂️</label>
               </div>
               
               
@@ -106,7 +115,7 @@
               </div>
 
               <!-- Legal statement above the Download button -->
-              <p class="text-center">Using this tool, I agree that I may use the downloaded files for personal use only.</p>
+              <p class="text-center">Using this tool, I agree that I may use the downloaded files for personal use only. 🤝</p>
               <!-- Download button -->
               <div class="form-group text-center">
                 <input class="btn btn-primary" type="submit" value="Download" />
@@ -121,7 +130,7 @@
             <br>
             <br>
             <!-- Donations appreciated text above the Donate button -->
-            <p class="text-center">Consider donating please lmao Google is making it difficult to maintain the downloader <3</p>
+            <p class="text-center">Consider donating please lmao Google is making it difficult to maintain the downloader 🙏♥️</p>
             <!-- Smaller "Donate" button -->
             <div class="form-group text-center">
               <button class="btn btn-secondary btn-sm" id="donateButton">Donate</button>
