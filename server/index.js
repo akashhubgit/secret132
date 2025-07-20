@@ -31,6 +31,8 @@ secondApp.listen(3030, '0.0.0.0', () => {
 
 */
 
+CONSOLE_LOGGING = true;
+
 app.listen(3030, () => {
     console.log("It Works!");
 });
@@ -104,7 +106,7 @@ async function getYTName(data) {
         var stream = data.get("stream");
         stream.on('info', (info) => {
             ytName = info.videoDetails.title.replace(/[#<>$+%!^&*´``~'|{}?=/\\@]/g, '-').replace(/ä/g, 'ae').replace(/ü/g, 'ue').replace(/ö/g, 'oe');
-            //console.log("getYTName DONE!");
+            if (CONSOLE_LOGGING) console.log("getYTName DONE!");
             data.set("ytName", ytName);
             resolve(data);
         });
@@ -120,13 +122,13 @@ async function downloadMP4BadQuality(data) {
 
         stream.pipe(fs.createWriteStream(outputFilePath))
             .on('finish', () => {
+                if (CONSOLE_LOGGING) console.log("downloadMP4BadQuality DONE!");
                 resolve(data);
             })
             .on('error', () => {
                 createFailureLog("Error downloadMP4BadQuality(): \n", ytName);
                 reject();
             });
-        //console.log("downloadMP4BadQuality DONE!");
 
     });
 }
@@ -159,21 +161,19 @@ async function downloadMP4Video(videoStream, videoFilePath) {
 
     await new Promise((resolve, reject) => videoStream.pipe(fs.createWriteStream(videoFilePath))
                                             .on('finish', () => {
+                                                if (CONSOLE_LOGGING) console.log("downloadMP4Video DONE!");
                                                 resolve();
                                             })
                                             .on('error', reject));
-
-    //console.log("downloadMP4Video DONE!");
 }
 
 async function downloadMP4Audio(audioStream, audioFilePath) {
     await new Promise((resolve, reject) => audioStream.pipe(fs.createWriteStream(audioFilePath))
                                             .on('finish', () => {
+                                                if (CONSOLE_LOGGING) console.log("downloadMP4Audio DONE!");
                                                 resolve();
                                             })
                                             .on('error', reject));
-
-    //console.log("downloadMP4Audio DONE!");
 }
 
 async function downloadMP4GoodQuality(data) {
@@ -215,7 +215,7 @@ async function convertMP4ToMP3(data) {
             .on('error', reject)
             .on('end', () => resolve(data))
             .run();
-        //console.log("convertMP4toMP3 DONE!\n");
+            if (CONSOLE_LOGGING) console.log("convertMP4toMP3 DONE!\n");
     });
 }
 
@@ -223,7 +223,7 @@ async function trimFile(data) {
     return new Promise((resolve, reject) => {
         let duration = data.get("duration");
         if (duration > 0) {
-            //console.log("trimming starting broo");
+            if (CONSOLE_LOGGING) console.log("trimming starting broo");
             let outputFilePath = data.get("outputFilePath");
         
             let trimStartTime = data.get("trimStartTime");
@@ -242,7 +242,7 @@ async function trimFile(data) {
                 //      .withAudioCodec('copy')
                 .on('end', function(err) {
                     if (!err) {
-                        //console.log('trimming Done');
+                        if (CONSOLE_LOGGING) console.log('trimming Done');
                         data.set("outputFilePath", trimmedOutputFilePath);
                         resolve(data);
                     }
@@ -271,7 +271,7 @@ async function sendFile_and_PostProcessing(data) {
                 createFailureLog('Error in res.download(): ' + err, ytName);
                 reject(err);
             } else {
-                //console.log('File sent successfully');
+                if (CONSOLE_LOGGING) console.log('File sent successfully');
                 
                 deleteFiles(ytName);
 
@@ -288,7 +288,7 @@ function downloadMp3(data) {
 
     let url = data.get("url");
 
-    //console.log(url);
+    if (CONSOLE_LOGGING) console.log(url);
 
     var stream = ytdl(url, {
         format: 'mp4',
@@ -357,7 +357,7 @@ function downloadMp4_GoodQuality(data) {
 
 app.get('/download', async (req, res) => {
     try {
-        //console.log(req.query);
+        if (CONSOLE_LOGGING) console.log(req.query);
         const url = req.query.url;
         const downloadType = req.query.downloadType;
 
@@ -370,9 +370,9 @@ app.get('/download', async (req, res) => {
             trimStartTime = timeStampToSeconds(req.query.cutFrom);
             const cutToSecs = timeStampToSeconds(req.query.cutTo);
 
-            //console.log(trimStartTime + " und " + cutToSecs);
+            if (CONSOLE_LOGGING) console.log(trimStartTime + " und " + cutToSecs);
             var duration = cutToSecs - trimStartTime + 1; // +1 for that mini extra step
-            //console.log("dur = " + duration);
+            if (CONSOLE_LOGGING) console.log("dur = " + duration);
         }
         
         var data = new Map();
