@@ -53,6 +53,12 @@
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
       }
+
+      /* Optional: Styling for clear button */
+      #clearUrl {
+        font-size: 1.2em;
+        padding: 0 0.75em;
+      }
     </style>
   </head>
   <body>
@@ -65,7 +71,12 @@
           <div class="col-12 col-md-4 offset-md-4">
             <form action="/download" method="GET" onsubmit="checkInput(event)">
               <div class="form-group">
+                <div class="input-group">
                 <input class="form-control" id="linkName" type="text" name="url" placeholder="https://youtu.be/dQw4w9WgXcQ" required />
+                  <div class="input-group-append">
+                    <button class="btn btn-outline-secondary" type="button" id="clearUrl">&times;</button>
+                  </div>
+                </div>
               </div>
               <div class="form-group">
                 <label for="downloadType">Select download type:</label>
@@ -197,11 +208,11 @@
 
         const eventSource = new EventSource(`/status/${requestId}`);
         
-        eventSource.onopen = function() {
+        eventSource.onopen = function () {
             console.log("SSE connection opened for requestId:", requestId);
         };
         
-        eventSource.onmessage = function(event) {
+        eventSource.onmessage = function (event) {
             console.log("Received status:", event.data);
             if (event.data) {
                 statusText.textContent = event.data;
@@ -217,7 +228,7 @@
             }
         };
 
-        eventSource.onerror = function(error) {
+        eventSource.onerror = function (error) {
             console.error("EventSource error:", error);
         };
 
@@ -234,16 +245,17 @@
       // Toggle video quality options based on MP4 selection
       const mp4Radio = document.getElementById("mp4Radio");
       const videoQualityOptions = document.getElementById("videoQualityOptions");
-      mp4Radio.addEventListener("change", function() {
+      mp4Radio.addEventListener("change", function () {
         videoQualityOptions.style.display = this.checked ? "block" : "none";
       });
+
       const mp3Radio = document.querySelector("input[name='downloadType'][value='mp3']");
-      mp3Radio.addEventListener("change", function() {
+      mp3Radio.addEventListener("change", function () {
         videoQualityOptions.style.display = "none";
       });
       // Add click event listener to the Donate button
       const donateButton = document.getElementById("donateButton");
-      donateButton.addEventListener("click", function() {
+      donateButton.addEventListener("click", function () {
         window.open("https://paypal.me/akashahmad1", "_blank");
       });
       
@@ -255,6 +267,13 @@
         trimGroup.style.display = this.checked ? "flex" : "none";
       });
 
+      // Clear URL input when ❌ is clicked
+      const clearUrlButton = document.getElementById("clearUrl");
+      clearUrlButton.addEventListener("click", function () {
+        const urlInput = document.getElementById("linkName");
+        urlInput.value = "";
+        urlInput.focus();
+      });
     </script>
   </body>
 </html>
