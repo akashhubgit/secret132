@@ -317,6 +317,7 @@ async function sendFile_and_PostProcessing(data) {
         res.set('Content-Disposition', `attachment; filename="${filename}"`);
         
         try {
+            // Send the "File sent :)" status before closing the connection
             res.download(outputFilePath, filename, async (err) => {
                 if (err) {
                     console.error('Error in res.download():', err);
@@ -329,9 +330,10 @@ async function sendFile_and_PostProcessing(data) {
                     reject(err);
                 } else {
                     if (CONSOLE_LOGGING) console.log('File sent successfully');
+                    await updateStatus(data, "File sent :)"); // Emit status update here
                     deleteFiles(ytName);
                     createSuccessLog(ytName);
-                    resolve(data)
+                    resolve(data);
                 }
             });
         } catch (error) {

@@ -135,7 +135,7 @@
             <br>
             <br>
             <!-- Donations appreciated text above the Donate button -->
-            <p class="text-center">Consider donating please lmao Google is making it difficult to maintain the downloader 🙏♥️</p>
+            <p class="text-center">Consider donating please Google is making it difficult to maintain the downloader 🙏♥️</p>
             <!-- Smaller "Donate" button -->
             <div class="form-group text-center">
               <button class="btn btn-secondary btn-sm" id="donateButton">Donate</button>
@@ -218,7 +218,7 @@
             statusText.textContent = event.data;
                 
                 // Close connection and hide spinner when download is complete
-            if (event.data.includes("Preparing download")) {
+            if (event.data.includes("File sent :)")) {
               setTimeout(() => {
                 eventSource.close();
                 statusDiv.style.display = 'none';
