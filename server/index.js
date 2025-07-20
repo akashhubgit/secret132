@@ -104,7 +104,7 @@ async function getYTName(data) {
         var stream = data.get("stream");
         stream.on('info', (info) => {
             ytName = info.videoDetails.title.replace(/[#<>$+%!^&*´``~'|{}?=/\\@]/g, '-').replace(/ä/g, 'ae').replace(/ü/g, 'ue').replace(/ö/g, 'oe');
-            ////console.log("getYTName DONE!");
+            //console.log("getYTName DONE!");
             data.set("ytName", ytName);
             resolve(data);
         });
@@ -149,6 +149,7 @@ async function mergeVideoAndAudio(data) {
             })
             .on('error', (err) => {
                 console.error('Error:', err);
+                createFailureLog('Error in mergeVideoAndAudio(): ' + err, data.get("ytName"));
                 reject(err);
             });
     });
@@ -242,12 +243,13 @@ async function trimFile(data) {
                 .on('end', function(err) {
                     if (!err) {
                         //console.log('trimming Done');
+                        data.set("outputFilePath", trimmedOutputFilePath);
+                        resolve(data);
                     }
-                    data.set("outputFilePath", trimmedOutputFilePath);
-                    resolve(data);
                 })
                 .on('error', function(err) {
-                    //console.log('error in trimFile(): ', err);
+                    createFailureLog('Error in ffmpeg trimFile(): ' + err, data.get("ytName"));
+                    reject()
                 })
                 .run();
 
@@ -266,12 +268,15 @@ async function sendFile_and_PostProcessing(data) {
         res.download(outputFilePath, async (err) => {
             if (err) {
                 console.error('Error in res.download()...:', err);
+                createFailureLog('Error in res.download(): ' + err, ytName);
+                reject(err);
             } else {
                 //console.log('File sent successfully');
                 
                 deleteFiles(ytName);
 
                 createSuccessLog(ytName);
+                resolve(data)
             }
         });
 
