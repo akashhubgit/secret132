@@ -9,6 +9,7 @@ const ffprobe = require('ffprobe-static');
 const path = require('path');
 const EventEmitter = require('events');
 const statusEmitter = new EventEmitter();
+const config = require('./config');
 
 // Add CORS support
 app.use(cors());
@@ -36,7 +37,7 @@ secondApp.listen(3030, '0.0.0.0', () => {
 
 */
 
-CONSOLE_LOGGING = true;
+CONSOLE_LOGGING = config.CONSOLE_LOGGING;
 
 app.listen(3030, () => {
     console.log("It Works!");
