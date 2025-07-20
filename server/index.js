@@ -330,7 +330,7 @@ async function sendFile_and_PostProcessing(data) {
                     reject(err);
                 } else {
                     if (CONSOLE_LOGGING) console.log('File sent successfully');
-                    await updateStatus(data, "File sent :)"); // Emit status update here
+                    await updateStatus(data, "File sent :)");
                     deleteFiles(ytName);
                     createSuccessLog(ytName);
                     resolve(data);
