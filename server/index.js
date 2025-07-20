@@ -51,7 +51,7 @@ app.get('/', (req, res) => {
 // Update the status endpoint
 app.get('/status/:id', (req, res) => {
     const requestId = req.params.id;
-    console.log("Status connection established for requestId:", requestId);
+    if (CONSOLE_LOGGING) console.log("Status connection established for requestId:", requestId);
     
     res.writeHead(200, {
         'Content-Type': 'text/event-stream',
@@ -62,7 +62,7 @@ app.get('/status/:id', (req, res) => {
 
     const statusListener = (id, status) => {
         if (id === requestId) {
-            console.log(`Emitting status: ${status} for requestId: ${id}`);
+            if (CONSOLE_LOGGING) console.log(`Emitting status: ${status} for requestId: ${id}`);
             res.write(`data: ${status}\n\n`);
         }
     };
@@ -70,7 +70,7 @@ app.get('/status/:id', (req, res) => {
     statusEmitter.on('status', statusListener);
 
     req.on('close', () => {
-        console.log("Connection closed for requestId:", requestId);
+        if (CONSOLE_LOGGING) console.log("Connection closed for requestId:", requestId);
         statusEmitter.removeListener('status', statusListener);
     });
 });
@@ -328,7 +328,7 @@ async function sendFile_and_PostProcessing(data) {
 // Update the updateStatus function
 async function updateStatus(data, status) {
     const requestId = data.get("requestId");
-    console.log(`Updating status: ${status} for requestId: ${requestId}`);
+    if (CONSOLE_LOGGING) console.log(`Updating status: ${status} for requestId: ${requestId}`);
     return new Promise((resolve) => {
         statusEmitter.emit('status', requestId, status);
         // Give a small delay to ensure status is sent
@@ -456,7 +456,7 @@ function downloadMp4_GoodQuality(data) {
 app.get('/download', async (req, res) => {
     try {
         const requestId = req.query.requestId || Date.now().toString();
-        console.log("Download started with requestId:", requestId);
+        if (CONSOLE_LOGGING) console.log("Download started with requestId:", requestId);
         
         const url = req.query.url;
         const downloadType = req.query.downloadType;
