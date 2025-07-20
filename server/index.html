@@ -218,12 +218,12 @@
             statusText.textContent = event.data;
                 
                 // Close connection and hide spinner when download is complete
-            if (event.data.includes("File sent :)")) {
+            if (event.data.includes("File sending... Please wait a bit :)")) {
               setTimeout(() => {
                 eventSource.close();
                 statusDiv.style.display = 'none';
                 spinner.style.display = 'none';
-              }, 1000);
+              }, 3000);
             }
           }
         };

@@ -334,7 +334,7 @@ async function sendFile_and_PostProcessing(data) {
                     resolve(); //avoid crashing the server
                 } else {
                     if (CONSOLE_LOGGING) console.log('File sent successfully');
-                    await updateStatus(data, "File sent :)");
+                    await updateStatus(data, "File sending... Please wait a bit :)");
                     deleteFiles(ytName);
                     createSuccessLog(ytName);
                     resolve(data);
