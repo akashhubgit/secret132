@@ -7,6 +7,11 @@ const ffmpegStatic = require('ffmpeg-static');
 const ffmpeg = require('fluent-ffmpeg');
 const ffprobe = require('ffprobe-static');
 const path = require('path');
+const EventEmitter = require('events');
+const statusEmitter = new EventEmitter();
+
+// Add CORS support
+app.use(cors());
 
 //const pathtowebsite2 = './website3030/';
 //app.use('/static', express.static('./static'));
@@ -42,6 +47,33 @@ app.get('/', (req, res) => {
         root: './'
     });
 })
+
+// Update the status endpoint
+app.get('/status/:id', (req, res) => {
+    const requestId = req.params.id;
+    console.log("Status connection established for requestId:", requestId);
+    
+    res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*'
+    });
+
+    const statusListener = (id, status) => {
+        if (id === requestId) {
+            console.log(`Emitting status: ${status} for requestId: ${id}`);
+            res.write(`data: ${status}\n\n`);
+        }
+    };
+
+    statusEmitter.on('status', statusListener);
+
+    req.on('close', () => {
+        console.log("Connection closed for requestId:", requestId);
+        statusEmitter.removeListener('status', statusListener);
+    });
+});
 
 function timeStampToSeconds(timeStampStr) {
     var seconds = 0;
@@ -105,7 +137,12 @@ async function getYTName(data) {
     return new Promise((resolve, reject) => {
         var stream = data.get("stream");
         stream.on('info', (info) => {
-            ytName = info.videoDetails.title.replace(/[#<>$+%!^&*´``~'|{}?=/\\@]/g, '-').replace(/ä/g, 'ae').replace(/ü/g, 'ue').replace(/ö/g, 'oe');
+            // Replace all non-alphanumeric characters with space, then remove multiple spaces
+            ytName = info.videoDetails.title
+                .replace(/[^a-zA-Z0-9]/g, ' ')  // Replace non-alphanumeric with space
+                .replace(/\s+/g, ' ')           // Replace multiple spaces with single space
+                .trim();                        // Remove leading/trailing spaces
+            
             if (CONSOLE_LOGGING) console.log("getYTName DONE!");
             data.set("ytName", ytName);
             resolve(data);
@@ -223,36 +260,36 @@ async function trimFile(data) {
     return new Promise((resolve, reject) => {
         let duration = data.get("duration");
         if (duration > 0) {
-            if (CONSOLE_LOGGING) console.log("trimming starting broo");
-            let outputFilePath = data.get("outputFilePath");
+            updateStatus(data, "Trimming file...").then(() => {
+                let outputFilePath = data.get("outputFilePath");
         
-            let trimStartTime = data.get("trimStartTime");
+                let trimStartTime = data.get("trimStartTime");
 
-            let dotIndex = outputFilePath.lastIndexOf(".");
-            let trimmedOutputFilePath = outputFilePath.substring(0, dotIndex) + "_t" + outputFilePath.substring(dotIndex);
+                let dotIndex = outputFilePath.lastIndexOf(".");
+                let trimmedOutputFilePath = outputFilePath.substring(0, dotIndex) + "_t" + outputFilePath.substring(dotIndex);
 
 
-            ffmpeg(outputFilePath)
-                //      .setFfmpegPath(ffmpegStatic)
-                //      .setFfprobePath(ffprobe.path)
-                .output(trimmedOutputFilePath)
-                .setStartTime(trimStartTime)
-                .setDuration(duration)
-                //      .withVideoCodec('copy')
-                //      .withAudioCodec('copy')
-                .on('end', function(err) {
-                    if (!err) {
-                        if (CONSOLE_LOGGING) console.log('trimming Done');
-                        data.set("outputFilePath", trimmedOutputFilePath);
-                        resolve(data);
-                    }
-                })
-                .on('error', function(err) {
-                    createFailureLog('Error in ffmpeg trimFile(): ' + err, data.get("ytName"));
-                    reject()
-                })
-                .run();
-
+                ffmpeg(outputFilePath)
+                    //      .setFfmpegPath(ffmpegStatic)
+                    //      .setFfprobePath(ffprobe.path)
+                    .output(trimmedOutputFilePath)
+                    .setStartTime(trimStartTime)
+                    .setDuration(duration)
+                    //      .withVideoCodec('copy')
+                    //      .withAudioCodec('copy')
+                    .on('end', function(err) {
+                        if (!err) {
+                            if (CONSOLE_LOGGING) console.log('trimming Done');
+                            data.set("outputFilePath", trimmedOutputFilePath);
+                            resolve(data);
+                        }
+                    })
+                    .on('error', function(err) {
+                        createFailureLog('Error in ffmpeg trimFile(): ' + err, data.get("ytName"));
+                        reject()
+                    })
+                    .run();
+            });
         } else {
             resolve(data);
         }
@@ -260,26 +297,42 @@ async function trimFile(data) {
 }
 
 async function sendFile_and_PostProcessing(data) {
+    await updateStatus(data, "Preparing download...");
     return new Promise((resolve, reject) => {
         let res = data.get("res");
         let outputFilePath = data.get("outputFilePath");
         let ytName = data.get("ytName");
-
-        res.download(outputFilePath, async (err) => {
+        
+        // Get file extension from path
+        const ext = path.extname(outputFilePath);
+        const filename = `${ytName}${ext}`;
+        
+        // Set filename in header
+        res.set('Content-Disposition', `attachment; filename="${filename}"`);
+        
+        res.download(outputFilePath, filename, async (err) => {
             if (err) {
                 console.error('Error in res.download()...:', err);
                 createFailureLog('Error in res.download(): ' + err, ytName);
                 reject(err);
             } else {
                 if (CONSOLE_LOGGING) console.log('File sent successfully');
-                
                 deleteFiles(ytName);
-
                 createSuccessLog(ytName);
                 resolve(data)
             }
         });
+    });
+}
 
+// Update the updateStatus function
+async function updateStatus(data, status) {
+    const requestId = data.get("requestId");
+    console.log(`Updating status: ${status} for requestId: ${requestId}`);
+    return new Promise((resolve) => {
+        statusEmitter.emit('status', requestId, status);
+        // Give a small delay to ensure status is sent
+        setTimeout(resolve, 100);
     });
 }
 
@@ -298,9 +351,25 @@ function downloadMp3(data) {
     data.set("stream", stream);
 
     getYTName(data)
+        .then(async (data) => {
+            await updateStatus(data, "Getting YouTube video information...");
+            return data;
+        })
         .then(downloadMP4BadQuality)
+        .then(async (data) => {
+            await updateStatus(data, "Downloading from Youtube...");
+            return data;
+        })
         .then(convertMP4ToMP3)
+        .then(async (data) => {
+            await updateStatus(data, "Converting to MP3...");
+            return data;
+        })
         .then(trimFile)
+        .then(async (data) => {
+            await updateStatus(data, "Sending file...");
+            return data;
+        })
         .then(sendFile_and_PostProcessing);
 
     return;
@@ -321,8 +390,20 @@ function downloadMp4_BadQuality(data) {
     data.set("stream", stream);
 
     getYTName(data)
+        .then(async (data) => {
+            await updateStatus(data, "Getting YouTube video information...");
+            return data;
+        })
         .then(downloadMP4BadQuality)
+        .then(async (data) => {
+            await updateStatus(data, "Downloading MP4...");
+            return data;
+        })
         .then(trimFile)
+        .then(async (data) => {
+            await updateStatus(data, "Sending file...");
+            return data;
+        })
         .then(sendFile_and_PostProcessing);
         
     return;
@@ -347,17 +428,36 @@ function downloadMp4_GoodQuality(data) {
     data.set("audioStream", audioStream);
     
     getYTName(data)
+        .then(async (data) => {
+            await updateStatus(data, "Getting YouTube video information...");
+            return data;
+        })
         .then(downloadMP4GoodQuality)
+        .then(async (data) => {
+            await updateStatus(data, "Downloading video and audio streams...");
+            return data;
+        })
         .then(mergeVideoAndAudio)
+        .then(async (data) => {
+            await updateStatus(data, "Merging video and audio...");
+            return data;
+        })
         .then(trimFile)
+        .then(async (data) => {
+            await updateStatus(data, "Sending file...");
+            return data;
+        })
         .then(sendFile_and_PostProcessing);
 
     return;
 }
 
+// Modify the download endpoint
 app.get('/download', async (req, res) => {
     try {
-        if (CONSOLE_LOGGING) console.log(req.query);
+        const requestId = req.query.requestId || Date.now().toString();
+        console.log("Download started with requestId:", requestId);
+        
         const url = req.query.url;
         const downloadType = req.query.downloadType;
 
@@ -376,6 +476,7 @@ app.get('/download', async (req, res) => {
         }
         
         var data = new Map();
+        data.set("requestId", requestId);
         data.set("url", url);
         data.set("duration", duration);
         data.set("trimStartTime", trimStartTime);

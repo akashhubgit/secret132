@@ -93,6 +93,10 @@
               <div class="form-group text-center">
                 <input class="btn btn-primary" type="submit" value="Download" />
               </div>
+              <!-- div for status updates -->
+              <div id="status" class="alert alert-info" style="display: none;">
+                <p id="statusText"></p>
+              </div>
               <!-- Five empty lines -->
             </form>
             <br>
@@ -108,22 +112,100 @@
       </div>
     </div>
     <script>
-      // Check Input onSubmit
+      // checkInput for dangerous chars 
       function checkInput(event) {
-  const url = document.getElementById("linkName").value;
-  const trimCheckbox = document.getElementById("trimCheckbox");
-  
-  // Explicitly set the value of the trimCheckbox in the form data
-  document.getElementById("trimCheckboxValue").value = trimCheckbox.checked ? "on" : "off";
+        event.preventDefault();  // Always prevent default form submission
+        
+        const url = document.getElementById("linkName").value;
+        if (!url.includes("youtu")) {
+          alert("Invalid url.");
+          return;
+        }
 
-  console.log(url);
-  if (url.includes("youtu")) {
-    return true;
-  } else {
-    alert("Invalid url.");
-    event.preventDefault();
-  }
-}
+        const requestId = Date.now().toString();
+        const trimCheckbox = document.getElementById("trimCheckbox");
+        const trimCheckboxValue = trimCheckbox.checked ? "on" : "off";
+        
+        // Get form data
+        const downloadType = document.querySelector('input[name="downloadType"]:checked').value;
+        const videoQuality = downloadType === 'mp4' ? 
+          document.querySelector('input[name="videoQuality"]:checked').value : '';
+        const cutFrom = document.getElementById("cutFrom").value;
+        const cutTo = document.getElementById("cutTo").value;
+
+        // Start status updates
+        startStatusUpdates(requestId);
+
+        // Make AJAX request
+        fetch(`/download?url=${encodeURIComponent(url)}&downloadType=${downloadType}&videoQuality=${videoQuality}&trimCheckboxValue=${trimCheckboxValue}&cutFrom=${cutFrom}&cutTo=${cutTo}&requestId=${requestId}`)
+          .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            // Get filename from Content-Disposition header
+            const disposition = response.headers.get('Content-Disposition');
+            const filenameMatch = disposition && disposition.match(/filename="(.+)"/);
+            const filename = filenameMatch ? filenameMatch[1] : 'download.' + (downloadType === 'mp3' ? 'mp3' : 'mp4');
+            return { blob: response.blob(), filename: filename };
+          })
+          .then(({blob, filename}) => blob.then(blob => ({blob, filename})))
+          .then(({blob, filename}) => {
+            // Create and trigger download with correct filename
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            alert('Download failed. Please try again.');
+          });
+      }
+
+      // Update the startStatusUpdates function
+      function startStatusUpdates(requestId) {
+        const statusDiv = document.getElementById('status');
+        const statusText = document.getElementById('statusText');
+        statusDiv.style.display = 'block';
+        statusText.textContent = 'Initializing download...';
+
+        const eventSource = new EventSource(`/status/${requestId}`);
+        
+        eventSource.onopen = function() {
+            console.log("SSE connection opened for requestId:", requestId);
+        };
+        
+        eventSource.onmessage = function(event) {
+            console.log("Received status:", event.data);
+            if (event.data) {
+                statusText.textContent = event.data;
+                
+                // Close connection when download is complete
+                if (event.data.includes("Preparing download")) {
+                    setTimeout(() => {
+                        eventSource.close();
+                        statusDiv.style.display = 'none';
+                    }, 1000);
+                }
+            }
+        };
+
+        eventSource.onerror = function(error) {
+            console.error("EventSource error:", error);
+        };
+
+        // Cleanup after 5 minutes
+        setTimeout(() => {
+            if (eventSource.readyState !== EventSource.CLOSED) {
+                console.log("Closing stale connection");
+                eventSource.close();
+                statusText.textContent = 'Download timed out. Please try again.';
+            }
+        }, 300000);
+      }
+
       // Toggle video quality options based on MP4 selection
       const mp4Radio = document.getElementById("mp4Radio");
       const videoQualityOptions = document.getElementById("videoQualityOptions");
