@@ -317,17 +317,21 @@ async function sendFile_and_PostProcessing(data) {
         res.set('Content-Disposition', `attachment; filename="${filename}"`);
         
         try {
-            // Send the "File sent :)" status before closing the connection
             res.download(outputFilePath, filename, async (err) => {
                 if (err) {
-                    console.error('Error in res.download():', err);
-                    createFailureLog('Error in res.download(): ' + err, ytName);
-                    if (err.code === 'ENOENT') {
+                    if (err.code === 'ECONNABORTED') {
+                        console.warn('Client aborted the request:', err.message);
+                    } else if (err.code === 'ENOENT') {
                         res.status(404).send('File not found. Please try downloading again.');
                     } else {
                         res.status(500).send('Error downloading file: ' + err.message);
                     }
-                    reject(err);
+                    
+                    // Perform cleanup if needed
+                    console.error('Error in res.download():', err);
+                    deleteFiles(ytName);
+                    createFailureLog('Error in res.download(): ' + err, ytName);
+                    resolve(); //avoid crashing the server
                 } else {
                     if (CONSOLE_LOGGING) console.log('File sent successfully');
                     await updateStatus(data, "File sent :)");
