@@ -311,18 +311,30 @@ async function sendFile_and_PostProcessing(data) {
         // Set filename in header
         res.set('Content-Disposition', `attachment; filename="${filename}"`);
         
-        res.download(outputFilePath, filename, async (err) => {
-            if (err) {
-                console.error('Error in res.download()...:', err);
-                createFailureLog('Error in res.download(): ' + err, ytName);
-                reject(err);
-            } else {
-                if (CONSOLE_LOGGING) console.log('File sent successfully');
-                deleteFiles(ytName);
-                createSuccessLog(ytName);
-                resolve(data)
-            }
-        });
+        try {
+            res.download(outputFilePath, filename, async (err) => {
+                if (err) {
+                    console.error('Error in res.download():', err);
+                    createFailureLog('Error in res.download(): ' + err, ytName);
+                    if (err.code === 'ENOENT') {
+                        res.status(404).send('File not found. Please try downloading again.');
+                    } else {
+                        res.status(500).send('Error downloading file: ' + err.message);
+                    }
+                    reject(err);
+                } else {
+                    if (CONSOLE_LOGGING) console.log('File sent successfully');
+                    deleteFiles(ytName);
+                    createSuccessLog(ytName);
+                    resolve(data)
+                }
+            });
+        } catch (error) {
+            console.error('Unexpected error in res.download():', error);
+            createFailureLog('Unexpected error in res.download(): ' + error, ytName);
+            res.status(500).send('Unexpected error occurred during download');
+            reject(error);
+        }
     });
 }
 
