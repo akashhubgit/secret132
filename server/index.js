@@ -44,7 +44,7 @@ app.listen(3030, () => {
 });
 
 app.get('/', (req, res) => {
-    res.sendFile('index.html', {
+    res.sendFile('under_maintenance_page.html', {
         root: './'
     });
 })
